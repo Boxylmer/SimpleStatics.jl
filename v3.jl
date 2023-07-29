@@ -407,6 +407,7 @@ function plot_setup(s::StaticsSetup, name="default"; dsize=800, padding=0.4, dis
 
     # @svg begin
     Drawing(size[1], size[2], :svg, name * ".svg")
+    origin()
         background("antiquewhite")
         ### Joints
         sethue("black")
