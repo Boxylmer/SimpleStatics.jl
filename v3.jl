@@ -405,7 +405,8 @@ function plot_setup(s::StaticsSetup, name="default"; dsize=800, padding=0.4, dis
     size = (xunit * dsize, yunit * dsize)
     pts = transform_for_luxor(s.positions, size, xdomain, ydomain)
 
-    @svg begin
+    # @svg begin
+    Drawing(size[1], size[2], :svg, name * ".svg")
         background("antiquewhite")
         ### Joints
         sethue("black")
@@ -488,7 +489,9 @@ function plot_setup(s::StaticsSetup, name="default"; dsize=800, padding=0.4, dis
 
         ### constraints
 
-    end size[1] size[2]
+    # end size[1] size[2]
+    finish()
+    preview()
 end
 
 
@@ -517,13 +520,13 @@ function example_setup_1()
 end
 
 s1 = example_setup_1()
-plot_setup(s1)
+plot_setup(s1, "1 - Setup")
 m = constrained_dof_array_mapping(s1)
 gsm1 = global_stiffness_matrix(s1)
 cgsm1 = constrained_array(gsm1, m) 
 d1 = solve_displacements(s1) 
 st1 = solve_member_stresses(s1, d1)
-plot_setup(s1; displacements=d1)
+plot_setup(s1, "1 -Solution"; displacements=d1, stresses=st1)
 
 
 function example_setup_2()
@@ -546,11 +549,11 @@ function example_setup_2()
 end
 
 s2 = example_setup_2()
-plot_setup(s2)
+plot_setup(s2, "2 - Setup")
 global_stiffness_matrix(s2) 
 d2 = solve_displacements(s2)
 st2 = solve_member_stresses(s2, d2)
-plot_setup(s2, stresses=st2, displacements=d2)
+plot_setup(s2, "2 - Solution", stresses=st2, displacements=d2)
 
 
 function example_setup_3()
@@ -588,11 +591,11 @@ member_stiffness_matrix(s3, 6)
 member_stiffness_matrix(s3, 7)
 member_stiffness_matrix(s3, 8)
 
+plot_setup(s3, "3 - Setup"; dsize=1000)
 gsm3 = global_stiffness_matrix(s3)
-
 d3 = solve_displacements(s3) 
 st3 = solve_member_stresses(s3, d3)
-plot_setup(s3; displacements=d3, stresses=st3, dsize=1000)
+plot_setup(s3, "3 - Solution"; displacements=d3, stresses=st3, dsize=1000)
 
 
 
