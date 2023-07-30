@@ -489,6 +489,18 @@ function plot_setup(s::StaticsSetup, name="default"; dsize=800, padding=0.4, dis
         end
 
         ### constraints
+        sethue("green")
+        for i in eachindex(s.constraints)
+            p = pts[i]
+            c = s.constraints[i]
+            if c isa AnchorConstraint
+                circle(p, 4, action = :stroke)
+            elseif c isa XRollerConstraint
+                rect(p[1] - 16, p[2] - 2, 32, 4, action = :stroke)
+            elseif c isa YRollerConstraint
+                rect(p[1] - 2, p[2] - 16, 4, 32, action = :stroke)
+            end
+        end
 
     # end size[1] size[2]
     finish()

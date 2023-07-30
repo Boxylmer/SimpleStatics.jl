@@ -31,7 +31,7 @@
 </symbol>
 </g>
 </defs>
-<g id="surface51">
+<g id="surface101">
 <rect x="0" y="0" width="715.541753" height="357.770876" style="fill:rgb(98.039216%,92.156863%,84.313725%);fill-opacity:1;stroke:none;"/>
 <path style=" stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;" d="M 161.007813 278.265625 C 161.007813 280.933594 157.007813 280.933594 157.007813 278.265625 C 157.007813 275.597656 161.007813 275.597656 161.007813 278.265625 "/>
 <g style="fill:rgb(0%,0%,0%);fill-opacity:1;">
@@ -93,5 +93,7 @@
   <use xlink:href="#glyph0-8" x="386.235632" y="95.084469"/>
   <use xlink:href="#glyph0-2" x="392.344031" y="95.084469"/>
 </g>
+<path style="fill:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,50.196078%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 163.007813 278.265625 C 163.007813 283.597656 155.007813 283.597656 155.007813 278.265625 C 155.007813 272.933594 163.007813 272.933594 163.007813 278.265625 "/>
+<path style="fill:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(0%,50.196078%,0%);stroke-opacity:1;stroke-miterlimit:10;" d="M 540.53125 276.265625 L 572.53125 276.265625 L 572.53125 280.265625 L 540.53125 280.265625 Z M 540.53125 276.265625 "/>
 </g>
 </svg>
