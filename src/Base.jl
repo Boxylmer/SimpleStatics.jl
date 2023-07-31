@@ -10,8 +10,6 @@ struct YRollerConstraint <: SimpleConstraint end
 
 
 
-
-
 struct StaticMaterial{AT, MT}
     area::AT # in square meters
     modulus::MT # in pa or netwon / meter^2
@@ -20,7 +18,7 @@ end
 PerfectMaterial()::StaticMaterial = StaticMaterial(1.0, 1e12)
 
 
-struct StaticsSetup{T}
+struct StaticSetup{T}
     graph::SimpleGraph
     positions::Vector{<:Vector2D{T}} # Meters
     forces::Vector{<:Vector2D{T}} # newtons
@@ -30,7 +28,7 @@ struct StaticsSetup{T}
     edge_to_vertices::Vector{<:UnorderedPair}  
 end 
 
-function StaticsSetup(T::Type)
+function StaticSetup(T::Type=Float64)
     g = SimpleGraph()
     positions = Vector{Vector2D{T}}() # vertex id -> position of that joint
     forces = Vector{Vector2D{T}}() # vertex id -> force vector acting on that joint
@@ -38,28 +36,28 @@ function StaticsSetup(T::Type)
     materials = Vector{StaticMaterial{T}}() # edge id -> material for that member
     vertices_to_edge = Dict{UnorderedPair, Int32}() # use two vertices ids to look up the edge id connecting them
     edge_to_vertices = Vector{UnorderedPair}() # use an edge id to get the vertices it joins
-    return StaticsSetup(g, positions, forces, constraints, materials, vertices_to_edge, edge_to_vertices)
+    return StaticSetup(g, positions, forces, constraints, materials, vertices_to_edge, edge_to_vertices)
 end
 
-Base.eltype(::StaticsSetup{T}) where T = T 
+Base.eltype(::StaticSetup{T}) where T = T 
 
-n_joints(s::StaticsSetup) = length(s.positions)
-n_members(s::StaticsSetup) = length(s.materials)
-joint_ids(s::StaticsSetup) = 1:n_joints(s)
-member_ids(s::StaticsSetup) = 1:n_members(s)
-n_dofs(s::StaticsSetup) = 2 * n_joints(s)
-
+n_joints(s::StaticSetup) = length(s.positions)
+n_members(s::StaticSetup) = length(s.materials)
+joint_ids(s::StaticSetup) = 1:n_joints(s)
+member_ids(s::StaticSetup) = 1:n_members(s)
+"Naive number of dergees of freedom in the system (i.e., before constraints)."
+n_dofs(s::StaticSetup) = 2 * n_joints(s)
 
 "Get the joints IDs that a member connects, found by its member ID."
-terminal_joints(s::StaticsSetup, member_id::Integer) = s.edge_to_vertices[member_id]
+terminal_joints(s::StaticSetup, member_id::Integer) = s.edge_to_vertices[member_id]
 
 
-initialxy(s::StaticsSetup, vid::Integer) = s.positions[vid].x, s.positions[vid].y
-equilibriumxy(s::StaticsSetup, displacements::Vector{<:Vector2D}, vid::Integer) = s.positions[vid].x + displacements[vid].x, s.positions[vid].y + displacements[vid].y
+initialxy(s::StaticSetup, vid::Integer) = s.positions[vid].x, s.positions[vid].y
+equilibriumxy(s::StaticSetup, displacements::Vector{<:Vector2D}, vid::Integer) = s.positions[vid].x + displacements[vid].x, s.positions[vid].y + displacements[vid].y
 
 
 "Add a joint to the setup and return the index referring to that joint. The position should be set in meters."
-function add_joint!(setup::StaticsSetup{T}, position::Vector2D{T}, constraint::StaticConstraint=NoConstraint()) where T
+function add_joint!(setup::StaticSetup{T}, position::Vector2D{T}, constraint::StaticConstraint=NoConstraint()) where T
     node_index = n_joints(setup) + 1
     add_vertex!(setup.graph)
     push!(setup.positions, position)
@@ -68,8 +66,10 @@ function add_joint!(setup::StaticsSetup{T}, position::Vector2D{T}, constraint::S
     return node_index
 end
 
+add_joint!(setup::StaticSetup{T}, x::Number, y::Number, args...) where T = add_joint!(setup, Vector2D(convert(T, x), convert(T, y)), args...)
+
 "Add a member to the setup and return the index referring to that member."
-function add_member!(setup::StaticsSetup, node_index1::Int, node_index2::Int, material::StaticMaterial{T}=PerfectMaterial()) where T
+function add_member!(setup::StaticSetup, node_index1::Int, node_index2::Int, material::StaticMaterial{T}=PerfectMaterial()) where T
     if node_index1 == node_index2
         throw(ArgumentError("A member cannot connect a joint to itself."))
     end
@@ -88,18 +88,21 @@ function add_member!(setup::StaticsSetup, node_index1::Int, node_index2::Int, ma
 end
 
 "Set the force at a joint, in Newtons."
-function set_force!(setup::StaticsSetup{T}, joint_index::Int, force::Vector2D{T}) where T
+function set_force!(setup::StaticSetup{T}, joint_index::Int, force::Vector2D{T}) where T
     if typeof(setup.constraints[joint_index]) <: AnchorConstraint
         @warn "Force set on fully constrained joint! This won't cause anything to happen. Did you mean to place this force somewhere else?"
     end
     setup.forces[joint_index] = force
 end
 
-function set_constraint!(setup::StaticsSetup, joint_index::Int, constraint::StaticConstraint)
+set_force!(setup::StaticSetup{T}, x::Number, y::Number, f) where T = set_force!(setup, Vector2D(convert(T, x), convert(T, y)), f)
+
+
+function set_constraint!(setup::StaticSetup, joint_index::Int, constraint::StaticConstraint)
     setup.constraints[joint_index] = constraint
 end
 
-function member_length(setup::StaticsSetup, member_idx::Int)
+function member_length(setup::StaticSetup, member_idx::Int)
     edge_key = setup.edge_to_vertices[member_idx]
     node_index1, node_index2 = edge_key.a, edge_key.b
             
@@ -112,7 +115,7 @@ function member_length(setup::StaticsSetup, member_idx::Int)
 end
 
 "Get the angle, in radians, the member makes with the global coordinate system's positive X axis."
-function member_angle(setup::StaticsSetup, edge_id::Int)
+function member_angle(setup::StaticSetup, edge_id::Int)
     edge_key = setup.edge_to_vertices[edge_id]
     node_index1, node_index2 = edge_key
 
@@ -123,8 +126,8 @@ function member_angle(setup::StaticsSetup, edge_id::Int)
     return atan(dy, dx)
 end
 
-"Get the global stiffness matrix for a StaticsSetup in Newtons / Meter."
-function member_stiffness_matrix(setup::StaticsSetup, edge_id)
+"Get the global stiffness matrix for a StaticSetup in Newtons / Meter."
+function member_stiffness_matrix(setup::StaticSetup, edge_id)
     l = member_length(setup, edge_id)
     edge_key = setup.edge_to_vertices[edge_id]
     node_index1, node_index2 = edge_key
@@ -150,7 +153,7 @@ function dof_indices(node_index::Integer)
 end
 
 "Get a vector of the unconstrained forces in the setup."
-function force_vector(setup::StaticsSetup)
+function force_vector(setup::StaticSetup)
     force_vec = zeros(eltype(setup), n_dofs(setup))
     for i in eachindex(setup.forces)
         force_vec[dof_indices(i)] .= setup.forces[i].x, setup.forces[i].y
@@ -158,7 +161,7 @@ function force_vector(setup::StaticsSetup)
     return force_vec
 end
 
-function global_stiffness_matrix(setup::StaticsSetup)
+function global_stiffness_matrix(setup::StaticSetup)
     n = n_dofs(setup)
     k_global = zeros(n, n)
 
@@ -231,5 +234,5 @@ function constrained_array(vec::AbstractVector, mapping::Vector{<:Integer})
     return view(vec, mapping)
 end
 
-"Recover the original array where DOF indices will match with the StaticsSetup."
+"Recover the original array where DOF indices will match with the StaticSetup."
 original_array(arr::AbstractArray) = parent(arr)

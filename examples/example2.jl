@@ -1,6 +1,6 @@
 using SimpleStatics
 function example_setup_2()
-    s = StaticsSetup(Float64)
+    s = StaticSetup(Float64)
     j1 = add_joint!(s, Vector2D(0.0, 0.0))
     j2 = add_joint!(s, Vector2D(1.0, 0.0))
     j3 = add_joint!(s, Vector2D(1.0, 1.0))

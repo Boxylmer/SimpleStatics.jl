@@ -1,7 +1,7 @@
 using SimpleStatics
 function example_setup_4()
     # Matrix Analysis of Structures, chapter 4, truss in example 4.2
-    s = StaticsSetup(Float64)
+    s = StaticSetup(Float64)
     j1 = add_joint!(s, Vector2D(0.0, 0.0))
     j2 = add_joint!(s, Vector2D(16.0 * 12, 0.0 * 12))
     j3 = add_joint!(s, Vector2D(16.0 * 12, 12.0 * 12))

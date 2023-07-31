@@ -1,4 +1,4 @@
-function solve_displacements(setup::StaticsSetup{T}, gsm::Matrix{T}) where T
+function solve_displacements(setup::StaticSetup{T}, gsm::Matrix{T}) where T
     # setup.forces' index corresponds to the vertex id and contains a Vector2D
     force_vec = force_vector(setup)
     m = constrained_dof_array_mapping(setup)
@@ -15,12 +15,12 @@ function solve_displacements(setup::StaticsSetup{T}, gsm::Matrix{T}) where T
 
     return displacement_vecs
 end
-solve_displacements(setup::StaticsSetup) = solve_displacements(setup, global_stiffness_matrix(setup))
+solve_displacements(setup::StaticSetup) = solve_displacements(setup, global_stiffness_matrix(setup))
 
-equilibrium_positions(s::StaticsSetup, displacements::Vector{<:Vector2D}) = s.positions .+ displacements
+equilibrium_positions(s::StaticSetup, displacements::Vector{<:Vector2D}) = s.positions .+ displacements
 
 "Negative -> Compressive, Positive -> Tensile, index matches member index"
-function solve_member_stresses(setup::StaticsSetup{T}, displacements::Vector{<:Vector2D}) where T
+function solve_member_stresses(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}) where T
     fs = zeros(T, n_members(setup))
     for edge_id in member_ids(setup)
         # local refers to the member, these are still in global coordinates

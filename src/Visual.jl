@@ -54,7 +54,7 @@ function redistribute_linearly(values, desired_average)
         return T
 end
 
-function plot_setup(s::StaticsSetup, name="default"; dsize=800, padding=0.4, displacements=nothing, stresses=nothing)
+function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, displacements=nothing, stresses=nothing)
     xdomain, ydomain = find_domain(s.positions, padding)
     xlen = xdomain[2] - xdomain[1]
     ylen = ydomain[2] - ydomain[1]
