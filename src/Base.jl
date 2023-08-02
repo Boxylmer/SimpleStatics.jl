@@ -16,7 +16,7 @@ struct StaticMaterial{AT, MT}
 end
 
 PerfectMaterial()::StaticMaterial = StaticMaterial(1.0, 1e12)
-
+Tungsten(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 3.4473786465891e9)
 
 struct StaticSetup{T}
     graph::SimpleGraph

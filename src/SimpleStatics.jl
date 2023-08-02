@@ -14,6 +14,8 @@ export YRollerConstraint
 
 export StaticMaterial
 export PerfectMaterial
+export Tungsten
+
 
 export StaticSetup
 export add_joint!

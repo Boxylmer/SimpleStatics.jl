@@ -11,15 +11,47 @@ using Test
         p2 = SimpleStatics.UnorderedPair(2, 1)
         @test p1 == p2
 
+        @test SimpleStatics.higher(p1) == 2
+        @test SimpleStatics.lower(p1) == 1
 
+        @test length(p1) == length(p2) == 2
+
+        # Vector2D
+        v1 = SimpleStatics.Vector2D(2, 3)
+        v2 = SimpleStatics.Vector2D(-4, 5)
+        @test v1 + v2 == SimpleStatics.Vector2D(-2, 8)
+        @test v1 - v2 == SimpleStatics.Vector2D(6, -2)
+        @test v1 * 1 == v1
+        @test 4 * v2 == SimpleStatics.Vector2D(-16, 20)
+
+        added = 0
+        for val in v1
+            added += val
+        end
+        @test added == 5 
+
+        @test length(v1) == length(v2) == 2
+
+        @test SimpleStatics.unit_vector(v1) ≈ SimpleStatics.Vector2D(0.5547001962252291, 0.8320502943378437)
+        @test SimpleStatics.norm(v1) ≈ 3.605551275463989
 
     end
 
 
     @testset "Base.jl" begin
         # constraints
+        @test typeof(NoConstraint()) <: SimpleStatics.SimpleConstraint
+        @test typeof(AnchorConstraint()) <: SimpleStatics.SimpleConstraint
+        @test typeof(XRollerConstraint()) <: SimpleStatics.SimpleConstraint
+        @test typeof(YRollerConstraint()) <: SimpleStatics.SimpleConstraint
+        
+
 
         # materials
+        m1 = PerfectMaterial()
+        m2 = Tungsten(1)
+        @test m1.modulus > m2.modulus # a perfect material is more resistant to strain than tungsten, the strongest metal. 
+
 
         # StaticSetup
         s = StaticSetup()
