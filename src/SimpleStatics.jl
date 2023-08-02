@@ -30,7 +30,11 @@ export member_ids
 
 
 include("Solvers.jl")
-# export 
+export solve_displacements
+export equilibrium_positions
+export solve_member_stresses
+
+
 include("Visual.jl")
 
 

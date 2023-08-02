@@ -85,7 +85,9 @@ using Test
         gsm_constrained = SimpleStatics.constrained_array(gsm, m)
         @test gsm_constrained[2, 4] ≈ -2083 - 1/3
 
-
+        d = solve_displacements(s)
+       
+        @test d[2] ≈ SimpleStatics.Vector2D{Float64}(0.01460 + 2e-5/3, -0.10464041 - 2e-8/3)
     end
 
 

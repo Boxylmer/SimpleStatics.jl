@@ -48,3 +48,5 @@ function unit_vector(v::Vector2D)
 end
 
 Base.eltype(::Vector2D{T}) where T = T 
+
+Base.isapprox(a::Vector2D, b::Vector2D) = a.x ≈ b.x && a.y ≈ b.y
