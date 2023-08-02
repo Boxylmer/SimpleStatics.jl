@@ -95,7 +95,7 @@ function set_force!(setup::StaticSetup{T}, joint_index::Int, force::Vector2D{T})
     setup.forces[joint_index] = force
 end
 
-set_force!(setup::StaticSetup{T}, x::Number, y::Number, f) where T = set_force!(setup, Vector2D(convert(T, x), convert(T, y)), f)
+set_force!(setup::StaticSetup{T}, joint_index::Integer, x::Number, y::Number) where T = set_force!(setup, joint_index, Vector2D(convert(T, x), convert(T, y)))
 
 
 function set_constraint!(setup::StaticSetup, joint_index::Int, constraint::StaticConstraint)
