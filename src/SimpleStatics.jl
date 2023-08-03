@@ -13,8 +13,7 @@ export XRollerConstraint
 export YRollerConstraint
 
 export StaticMaterial
-export PerfectMaterial
-export Tungsten
+export Materials
 
 
 export StaticSetup
@@ -38,6 +37,6 @@ export solve_member_stresses
 
 
 include("Visual.jl")
-
+export plot_setup
 
 end

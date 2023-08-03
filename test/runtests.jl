@@ -48,8 +48,8 @@ using Test
 
 
         # materials
-        m1 = PerfectMaterial()
-        m2 = Tungsten(1)
+        m1 = Materials.PerfectMaterial()
+        m2 = Materials.Tungsten(1)
         @test m1.modulus > m2.modulus # a perfect material is more resistant to strain than tungsten, the strongest metal. 
 
 
@@ -122,6 +122,12 @@ using Test
         @test d[2] ≈ SimpleStatics.Vector2D{Float64}(0.01460 + 2e-5/3, -0.10464041 - 2e-8/3)
     end
 
+    @testset "Visual.jl" begin
+        s = example_setup()
+
+        plot_setup(s)
+
+    end
+
 
 end
-nothing

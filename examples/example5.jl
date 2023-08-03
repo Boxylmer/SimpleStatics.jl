@@ -1,0 +1,35 @@
+
+using SimpleStatics
+function example_setup_5()
+    my_setup = StaticSetup()
+    j1 = add_joint!(my_setup, 0, 0, AnchorConstraint())
+    j2 = add_joint!(my_setup, 1, 0)
+    j3 = add_joint!(my_setup, 1, 1)
+    j4 = add_joint!(my_setup, 2, 0)
+    j5 = add_joint!(my_setup, 2, 1)
+    j6 = add_joint!(my_setup, 3, 0)
+    j7 = add_joint!(my_setup, 3, 1)
+    j8 = add_joint!(my_setup, 4, 0)
+
+    set_constraint!(my_setup, j8, AnchorConstraint())
+    m = Materials.Pine2x4()
+    add_member!(my_setup, j1, j2, m)
+    add_member!(my_setup, j1, j3, m)
+    add_member!(my_setup, j2, j3, m)
+    add_member!(my_setup, j2, j4, m)
+    add_member!(my_setup, j3, j4, m)
+    add_member!(my_setup, j3, j5, m)
+    add_member!(my_setup, j4, j5, m)
+    add_member!(my_setup, j4, j6, m)
+    add_member!(my_setup, j5, j6, m)
+    add_member!(my_setup, j5, j7, m)
+    add_member!(my_setup, j6, j7, m)
+    add_member!(my_setup, j6, j8, m)
+    add_member!(my_setup, j7, j8, m)
+    set_force!(my_setup, j5, 0, -222411)
+    return my_setup
+end
+
+s = example_setup_5()
+d = solve_displacements(s)
+plot_setup(s, displacements=d)

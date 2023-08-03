@@ -68,15 +68,16 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
     pts = transform_for_luxor(s.positions, size, xdomain, ydomain)
 
     # @svg begin
-    Drawing(size[1], size[2], :svg, name * ".svg")
+    svgim = Drawing(size[1], size[2], :svg, name * ".svg")
     origin()
         background("antiquewhite")
         ### Joints
+        fontsize(18)
         sethue("black")
         for (i, p) in enumerate(pts)
-            circle(p, 2, action = :fill)
+            circle(p, 4, action = :fill)
 
-            label("P"*string(i), :NE, p)
+            label("J"*string(i), :NE, p + Point(2, -2))
 
         end
         
@@ -146,25 +147,41 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
         for (i, j) in enumerate(nonzero_force_indices)
             p1 = pts[j]
             p2 = pts[j] + nonzero_force_pixel_vectors[i]
-            arrow(p1, p2)
-            label("F"*string(i), :N, midpoint(p1, p2))
+            arrow(p1, p2, linewidth=4, arrowheadlength=20, arrowheadangle=pi/6)
+            label("F"*string(i), :NW, midpoint(p1, p2))
         end
 
         ### constraints
         sethue("green")
+        rectminor = 8
+        rectmajor = 32
         for i in eachindex(s.constraints)
             p = pts[i]
             c = s.constraints[i]
             if c isa AnchorConstraint
-                circle(p, 4, action = :stroke)
+                circle(p, 6, action = :stroke)
             elseif c isa XRollerConstraint
-                rect(p[1] - 16, p[2] - 2, 32, 4, action = :stroke)
+                pt1 = Point(p[1] - rectmajor/2, p[2] - rectminor/2)
+                pt2 = Point(p[1] + rectmajor/2, p[2] - rectminor/2)
+                line(pt1, pt2; action=:stroke)
+
+                pt1 = Point(p[1] - rectmajor/2, p[2] + rectminor/2)
+                pt2 = Point(p[1] + rectmajor/2, p[2] + rectminor/2)
+                line(pt1, pt2; action=:stroke)
             elseif c isa YRollerConstraint
-                rect(p[1] - 2, p[2] - 16, 4, 32, action = :stroke)
+                pt1 = Point(p[1] - rectminor/2, p[2] - rectmajor/2)
+                pt2 = Point(p[1] - rectminor/2, p[2] + rectmajor/2)
+                line(pt1, pt2; action=:stroke)
+
+                pt1 = Point(p[1] + rectminor/2, p[2] - rectmajor/2)
+                pt2 = Point(p[1] + rectminor/2, p[2] + rectmajor/2)
+                line(pt1, pt2; action=:stroke)
+            else
+                nothing
             end
+            
         end
 
-    # end size[1] size[2]
     finish()
-    preview()
+    return svgim
 end

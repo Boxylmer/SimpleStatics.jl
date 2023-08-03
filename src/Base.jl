@@ -15,8 +15,20 @@ struct StaticMaterial{AT, MT}
     modulus::MT # in pa or netwon / meter^2
 end
 
-PerfectMaterial()::StaticMaterial = StaticMaterial(1.0, 1e12)
-Tungsten(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 3.4473786465891e9)
+module Materials
+    import ..StaticMaterial
+    # http://web.mit.edu/16.20/homepage/3_Constitutive/Constitutive_files/module_3_with_solutions.pdf
+    PerfectMaterial()::StaticMaterial = StaticMaterial(1.0, 1e12)
+    Tungsten(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 410e9)
+    StainlessSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 195e9)
+    MildSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 196e9)
+    # https://amesweb.info/Materials/Youngs-Modulus-of-Wood.aspx
+    PVC(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 0.0065e9)
+    # https://core.ac.uk/download/pdf/153414189.pdf
+    Pine(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 9.6e9)
+    Pine2x4() = Pine(0.00338709)
+end
+
 
 struct StaticSetup{T}
     graph::SimpleGraph
@@ -69,17 +81,17 @@ end
 add_joint!(setup::StaticSetup{T}, x::Number, y::Number, args...) where T = add_joint!(setup, Vector2D(convert(T, x), convert(T, y)), args...)
 
 "Add a member to the setup and return the index referring to that member."
-function add_member!(setup::StaticSetup, node_index1::Int, node_index2::Int, material::StaticMaterial{T}=PerfectMaterial()) where T
-    if node_index1 == node_index2
+function add_member!(setup::StaticSetup, j1::Int, j2::Int, material::StaticMaterial{T}=Materials.PerfectMaterial()) where T
+    if j1 == j2
         throw(ArgumentError("A member cannot connect a joint to itself."))
     end
     
-    edge_key = UnorderedPair(node_index1, node_index2)
+    edge_key = UnorderedPair(j1, j2)
     if haskey(setup.vertices_to_edge, edge_key)
         throw(ArgumentError("A member between these nodes already exists."))
     end
     
-    add_edge!(setup.graph, node_index1, node_index2)
+    add_edge!(setup.graph, j1, j2)
     push!(setup.materials, material)
     n = length(setup.materials)
     setup.vertices_to_edge[edge_key] = n
@@ -95,7 +107,7 @@ function set_force!(setup::StaticSetup{T}, joint_index::Int, force::Vector2D{T})
     setup.forces[joint_index] = force
 end
 
-set_force!(setup::StaticSetup{T}, joint_index::Integer, x::Number, y::Number) where T = set_force!(setup, joint_index, Vector2D(convert(T, x), convert(T, y)))
+set_force!(setup::StaticSetup{T}, ji::Integer, fx::Number, fy::Number) where T = set_force!(setup, ji, Vector2D(convert(T, fx), convert(T, fy)))
 
 
 function set_constraint!(setup::StaticSetup, joint_index::Int, constraint::StaticConstraint)
@@ -128,15 +140,15 @@ end
 
 "Get the global stiffness matrix for a StaticSetup in Newtons / Meter."
 function member_stiffness_matrix(setup::StaticSetup, edge_id)
-    l = member_length(setup, edge_id)
+    l = member_length(setup, edge_id) # meters
     edge_key = setup.edge_to_vertices[edge_id]
     node_index1, node_index2 = edge_key
     c = (setup.positions[node_index2].x - setup.positions[node_index1].x) / l
     s = (setup.positions[node_index2].y - setup.positions[node_index1].y) / l
     m = setup.materials[edge_id]
-    A = m.area
-    E = m.modulus
-    scalar = A * E / l # units: newton / meter
+    A = m.area # m2
+    E = m.modulus # N/m2
+    scalar = A * E / l # m2 * N/m2 / m -> units: N / m
     return scalar * [
         c^2 c*s -c^2 -c*s;
         c*s s^2 -c*s -s^2;
