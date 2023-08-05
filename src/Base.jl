@@ -173,6 +173,7 @@ function force_vector(setup::StaticSetup)
     return force_vec
 end
 
+"Get the stiffness matrix of the entire `setup` with respect to the global coordinate system."
 function global_stiffness_matrix(setup::StaticSetup)
     n = n_dofs(setup)
     k_global = zeros(n, n)

@@ -19,7 +19,7 @@ solve_displacements(setup::StaticSetup) = solve_displacements(setup, global_stif
 
 equilibrium_positions(s::StaticSetup, displacements::Vector{<:Vector2D}) = s.positions .+ displacements
 
-"Negative -> Compressive, Positive -> Tensile, index matches member index"
+"Negative -> Compressive, Positive -> Tensile, index matches member index" # todo docs
 function solve_member_stresses(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}) where T
     fs = zeros(T, n_members(setup))
     for edge_id in member_ids(setup)
@@ -43,4 +43,15 @@ function solve_member_stresses(setup::StaticSetup{T}, displacements::Vector{<:Ve
         fs[edge_id] = mag * s # N
     end
     return fs
+end
+
+
+function solve_reaction_forces(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}, stresses::Vector{<:Number})
+    reaction_forces = Vector{Vector2D}(undef, n_joints(setup))
+    for mid in member_ids(setup)
+        j1, j2 = terminal_joints(setup, mid)
+        ang = member_angle(setup, mid)
+        x1 = 3 # how do I know which is which? todo stopped here
+
+    end
 end
