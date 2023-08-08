@@ -1,3 +1,7 @@
+BACKGROUND_COLOR = "antiquewhite"
+LINE_THICKNESS = 2
+FONT_SIZE = 12
+
 function find_domain(vals::AbstractArray{<:Number}, padding=0)
 min_x, max_x = vals[1], vals[1]
     for v in vals
@@ -46,15 +50,42 @@ function transform_for_luxor(pts::Vector{<:Vector2D}, canvas_size, padding=0)
     return transform_for_luxor(pts, canvas_size, xdomain, ydomain)
 end
 
-function redistribute_linearly(values, desired_average)
-        non_zero_vals = filter(x -> !(x ≈ 0), values)
-        average = sum(non_zero_vals) / length(non_zero_vals)
-        alpha = desired_average / average
-        T = [alpha * v for v in values]
-        return T
+function redistribute_linearly_alpha(values, desired_average)
+    non_zero_vals = filter(x -> !(x ≈ 0), values)
+    average = sum(non_zero_vals) / length(non_zero_vals)
+    return desired_average / average
 end
 
-function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, displacements=nothing, stresses=nothing)
+function redistribute_linearly(values, desired_average)
+    alpha = redistribute_linearly_alpha(values, desired_average)
+    return _redistribute_linearly(values, alpha)
+end
+
+function _redistribute_linearly(values, alpha)
+    T = [alpha * v for v in values]
+    return T
+end
+
+
+function draw_label(pt, text, color="black", offset = Point(8, -8))
+    defaults()
+    halign = offset.x < 0 ? :right : :left
+    valign = offset.y > 0 ? :top : :bottom
+    textpath(text, pt + offset, :path, valign=valign, halign=halign)
+
+    sethue(color); fillpreserve()
+    setline(0.25)
+    sethue(BACKGROUND_COLOR); strokepath()
+end
+
+function defaults()
+    setline(LINE_THICKNESS)
+    fontsize(FONT_SIZE)
+    setdash("solid")
+end
+
+function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, displacements=nothing, stresses=nothing, reaction_forces=nothing)
+    
     xdomain, ydomain = find_domain(s.positions, padding)
     xlen = xdomain[2] - xdomain[1]
     ylen = ydomain[2] - ydomain[1]
@@ -69,119 +100,172 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
 
     # @svg begin
     svgim = Drawing(size[1], size[2], :svg, name * ".svg")
+    defaults()
     origin()
-        background("antiquewhite")
-        ### Joints
-        fontsize(18)
-        sethue("black")
-        for (i, p) in enumerate(pts)
-            circle(p, 4, action = :fill)
+    background(BACKGROUND_COLOR)
 
-            label("J"*string(i), :NE, p + Point(2, -2))
-
-        end
-        
-        sethue("black")
-        ### Members
-        for mid in member_ids(s)
-            i, j = s.edge_to_vertices[mid]
-            p1 = pts[i]
-            p2 = pts[j]
-            line(p1, p2, action = :stroke)
-            label("M"*string(mid), :NE, midpoint(p1, p2))
-        end
-        
-        ### displacements
-        if !isnothing(displacements)
-            sethue("green")
-            displaced_pts = transform_for_luxor(s.positions .+ displacements, size, xdomain, ydomain)
-
-            for (i, p) in enumerate(pts)
-                circle(displaced_pts[i], 2, action = :fill)
-            end
-
-            ### Stresses 
-            function draw_member(mid)
-                i, j = s.edge_to_vertices[mid]
-                p1 = displaced_pts[i]
-                p2 = displaced_pts[j]
-                line(p1, p2, action = :stroke)
-            end
-
-            if isnothing(stresses)
-                for mid in member_ids(s)
-                    draw_member(mid)
-                end
-            else
-                sd = find_domain(stresses)
-                for mid in member_ids(s)
-                    
-                    stress = stresses[mid]
-
-                    if stress > 0
-                        color = (stress / sd[2], 0, 0)
-                    else
-                        color = (0, 0, stress / sd[1])
-                    end
-                    
-                    sethue(color)
-                    draw_member(mid)
-                end
-            end
-        end
-        
-
-        ### Forces
-        sethue("mediumvioletred")
-        nonzero_force_indices = [i for i in eachindex(s.forces) if (s.forces[i].x != 0 || s.forces[i].y != 0)]
-        nonzero_force_vectors = [s.forces[i] for i in nonzero_force_indices]
-        nonzero_force_magnitudes = norm.(nonzero_force_vectors)
-        average_relative_force_length = 0.1
-        nonzero_force_pixel_lengths = redistribute_linearly(
-            nonzero_force_magnitudes, 
-            average_relative_force_length * sqrt(size[1]^2 + size[2]^2)
-        )
-        nonzero_force_unit_vectors = [Point(v.x, -v.y) for v in unit_vector.(nonzero_force_vectors)]
-        @show nonzero_force_pixel_vectors = nonzero_force_pixel_lengths .* nonzero_force_unit_vectors
-
-        for (i, j) in enumerate(nonzero_force_indices)
-            p1 = pts[j]
-            p2 = pts[j] + nonzero_force_pixel_vectors[i]
-            arrow(p1, p2, linewidth=4, arrowheadlength=20, arrowheadangle=pi/6)
-            label("F"*string(i), :NW, midpoint(p1, p2))
-        end
-
-        ### constraints
+    
+    sethue("black")
+    ### Members
+    member_strings = Vector{String}(undef, length(member_ids(s)))
+    member_points = Vector{Point}(undef, length(member_ids(s)))
+    if !isnothing(displacements); setdash("longdashed"); end
+    for mid in member_ids(s)
+        i, j = s.edge_to_vertices[mid]
+        p1 = pts[i]
+        p2 = pts[j]
+        line(p1, p2, action = :stroke)
+        # draw_label("M"*string(mid), midpoint(p1, p2), color)
+        member_strings[mid] = "M"*string(mid)
+        member_points[mid] = midpoint(p1, p2)
+        # label("M"*string(mid), :NE, midpoint(p1, p2))
+    end
+    setdash("solid")
+    
+    ### Displacement Joints
+    if !isnothing(displacements)
         sethue("green")
-        rectminor = 8
-        rectmajor = 32
-        for i in eachindex(s.constraints)
-            p = pts[i]
-            c = s.constraints[i]
-            if c isa AnchorConstraint
-                circle(p, 6, action = :stroke)
-            elseif c isa XRollerConstraint
-                pt1 = Point(p[1] - rectmajor/2, p[2] - rectminor/2)
-                pt2 = Point(p[1] + rectmajor/2, p[2] - rectminor/2)
-                line(pt1, pt2; action=:stroke)
+        displaced_pts = transform_for_luxor(s.positions .+ displacements, size, xdomain, ydomain) 
 
-                pt1 = Point(p[1] - rectmajor/2, p[2] + rectminor/2)
-                pt2 = Point(p[1] + rectmajor/2, p[2] + rectminor/2)
-                line(pt1, pt2; action=:stroke)
-            elseif c isa YRollerConstraint
-                pt1 = Point(p[1] - rectminor/2, p[2] - rectmajor/2)
-                pt2 = Point(p[1] - rectminor/2, p[2] + rectmajor/2)
-                line(pt1, pt2; action=:stroke)
-
-                pt1 = Point(p[1] + rectminor/2, p[2] - rectmajor/2)
-                pt2 = Point(p[1] + rectminor/2, p[2] + rectmajor/2)
-                line(pt1, pt2; action=:stroke)
-            else
-                nothing
-            end
-            
+        ### Stresses 
+        function draw_member(mid)
+            i, j = s.edge_to_vertices[mid]
+            p1 = displaced_pts[i]
+            p2 = displaced_pts[j]
+            line(p1, p2, action = :stroke)
         end
 
+        if isnothing(stresses)
+            for mid in member_ids(s)
+                draw_member(mid)
+            end
+        else
+            sd = find_domain(stresses)
+            for mid in member_ids(s)
+                
+                stress = stresses[mid]
+
+                if stress > 0
+                    color = (stress / sd[2], 0, 0)
+                else
+                    color = (0, 0, stress / sd[1])
+                end
+                
+                sethue(color)
+                draw_member(mid)
+            end
+        end
+
+        sethue("lime")
+        for (i, p) in enumerate(pts)
+            circle(displaced_pts[i], 2, action = :fill)
+        end
+    end
+    
+
+    ### Forces
+    force_points = Vector{Point}()
+    force_strings = Vector{String}()
+
+    average_relative_force_length = 0.10 * sqrt(size[1]^2 + size[2]^2) # average force should consume 10% of the diagonal window size
+
+    sethue("mediumvioletred")
+    nonzero_force_indices = [i for i in eachindex(s.forces) if (s.forces[i].x != 0 || s.forces[i].y != 0)]
+    nonzero_force_vectors = [s.forces[i] for i in nonzero_force_indices]
+    nonzero_force_magnitudes = norm.(nonzero_force_vectors)
+    nonzero_force_unit_vectors = [Point(v.x, -v.y) for v in unit_vector.(nonzero_force_vectors)]
+
+    force_to_pixel_alpha = redistribute_linearly_alpha(nonzero_force_magnitudes, average_relative_force_length)
+    nonzero_force_pixel_lengths = _redistribute_linearly(nonzero_force_magnitudes, force_to_pixel_alpha)
+    nonzero_force_pixel_vectors = nonzero_force_pixel_lengths .* nonzero_force_unit_vectors
+    for (i, j) in enumerate(nonzero_force_indices)
+        p1 = pts[j]
+        p2 = pts[j] + nonzero_force_pixel_vectors[i]
+        arrow(p1, p2, linewidth=4, arrowheadlength=20, arrowheadangle=pi/6)
+        # label("F"*string(i), :SW, midpoint(p1, p2))
+        push!(force_points, midpoint(p1, p2))
+        push!(force_strings, "F"*string(i))
+    end
+
+    ### Reaction Forces
+    reaction_points = Vector{Point}()
+    reaction_strings = Vector{String}()
+    sethue("royalblue1")
+    if !isnothing(reaction_forces) && length(nonzero_force_indices) > 0
+        nonzero_reaction_indices = [i for i in eachindex(reaction_forces) if !(s.constraints[i] isa NoConstraint)]
+        nonzero_reaction_vectors = [reaction_forces[i] for i in nonzero_reaction_indices]
+        nonzero_reaction_magnitudes = norm.(nonzero_reaction_vectors)
+        nonzero_reaction_unit_vectors = [Point(v.x, -v.y) for v in unit_vector.(nonzero_reaction_vectors)]
+        nonzero_reaction_pixel_lengths = _redistribute_linearly(nonzero_reaction_magnitudes, force_to_pixel_alpha) # reuse previous alpha to keep the forces "to scale" with each other
+        nonzero_reaction_pixel_vectors = nonzero_reaction_pixel_lengths .* nonzero_reaction_unit_vectors
+
+        for (i, j) in enumerate(nonzero_reaction_indices)
+            p1 = pts[j]
+            p2 = pts[j] + nonzero_reaction_pixel_vectors[i]
+            arrow(p1, p2, linewidth=4, arrowheadlength=20, arrowheadangle=pi/6)
+            push!(reaction_strings, "RF"*string(i))
+            push!(reaction_points, midpoint(p1, p2))
+        end
+    end
+
+    ### constraints
+    sethue("green")
+    rectminor = 8
+    rectmajor = 32
+    for i in eachindex(s.constraints)
+        p = pts[i]
+        c = s.constraints[i]
+        if c isa AnchorConstraint
+            circle(p, 6, action = :stroke)
+        elseif c isa XRollerConstraint
+            pt1 = Point(p[1] - rectmajor/2, p[2] - rectminor/2)
+            pt2 = Point(p[1] + rectmajor/2, p[2] - rectminor/2)
+            line(pt1, pt2; action=:stroke)
+
+            pt1 = Point(p[1] - rectmajor/2, p[2] + rectminor/2)
+            pt2 = Point(p[1] + rectmajor/2, p[2] + rectminor/2)
+            line(pt1, pt2; action=:stroke)
+        elseif c isa YRollerConstraint
+            pt1 = Point(p[1] - rectminor/2, p[2] - rectmajor/2)
+            pt2 = Point(p[1] - rectminor/2, p[2] + rectmajor/2)
+            line(pt1, pt2; action=:stroke)
+
+            pt1 = Point(p[1] + rectminor/2, p[2] - rectmajor/2)
+            pt2 = Point(p[1] + rectminor/2, p[2] + rectmajor/2)
+            line(pt1, pt2; action=:stroke)
+        else
+            nothing
+        end
+        
+    end
+
+
+    ### Joints
+    joint_points = Vector{Point}(undef, length(pts))
+    joint_strings = Vector{String}(undef, length(pts))
+    for (i, p) in enumerate(pts)
+        sethue("black")
+        circle(p, 2, action = :fill)
+
+        joint_points[i] = p
+        joint_strings[i] = "J"*string(i)
+    end
+
+
+
+    ### Labels!
+    for i in eachindex(joint_points, joint_strings)
+        draw_label(joint_points[i], joint_strings[i], "black")
+    end
+    for i in eachindex(member_points, member_strings)
+        draw_label(member_points[i], member_strings[i], "black")
+    end
+    for i in eachindex(reaction_points, reaction_strings)
+        draw_label(reaction_points[i], reaction_strings[i], "royalblue1", Point(-8, 8))
+    end
+    for i in eachindex(force_points, force_strings)
+        draw_label(force_points[i], force_strings[i], "mediumvioletred", Point(-8, 8))
+    end
     finish()
     return svgim
 end

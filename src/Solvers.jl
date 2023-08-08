@@ -23,13 +23,12 @@ equilibrium_positions(s::StaticSetup, displacements::Vector{<:Vector2D}) = s.pos
 function solve_member_stresses(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}) where T
     fs = zeros(T, n_members(setup))
     for edge_id in member_ids(setup)
-        # local refers to the member, these are still in global coordinates
-        k_local = member_stiffness_matrix(setup, edge_id) # N / m
         v1, v2 = terminal_joints(setup, edge_id)
-        δx1, δy1 = displacements[v1]
-        δx2, δy2 = displacements[v2]
-        u_local = [δx1, δy1, δx2, δy2] # m
-        fx1, fy1, fx2, fy2 = k_local * u_local # N / m * m -> N
+        pair1, _ = induced_forces(setup, edge_id, displacements)
+        f1 = pair1.second
+        fx1, fy1 = f1
+        mag = norm(f1) # N
+
         x1, y1 = equilibriumxy(setup, displacements, v1)
         x2, y2 = equilibriumxy(setup, displacements, v2)
         
@@ -39,19 +38,25 @@ function solve_member_stresses(setup::StaticSetup{T}, displacements::Vector{<:Ve
             δp += y2 - y1
             s = sign(fy1) * sign(y2 - y1)
         end
-        mag = sqrt(fx1^2 + fy1^2) # N
         fs[edge_id] = mag * s # N
     end
     return fs
 end
 
 
-function solve_reaction_forces(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}, stresses::Vector{<:Number})
-    reaction_forces = Vector{Vector2D}(undef, n_joints(setup))
-    for mid in member_ids(setup)
-        j1, j2 = terminal_joints(setup, mid)
-        ang = member_angle(setup, mid)
-        x1 = 3 # how do I know which is which? todo stopped here
+function solve_reaction_forces(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}) where T
+    reaction_forces = zeros(Vector2D{T}, n_joints(setup))
 
+    for mid in member_ids(setup)
+        pair1, pair2 = induced_forces(setup, mid, displacements)
+        v1, f1 = pair1
+        v2, f2 = pair2
+        reaction_forces[v1] += f1
+        reaction_forces[v2] += f2
     end
+
+    for (id, force) in enumerate(setup.forces)
+        reaction_forces[id] -= force
+    end
+    return reaction_forces
 end

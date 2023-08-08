@@ -249,3 +249,14 @@ end
 
 "Recover the original array where DOF indices will match with the StaticSetup."
 original_array(arr::AbstractArray) = parent(arr)
+
+
+function induced_forces(setup, edge_id, displacements::Vector{<:Vector2D})
+    k_local = member_stiffness_matrix(setup, edge_id) # N / m
+    v1, v2 = terminal_joints(setup, edge_id)
+    δx1, δy1 = displacements[v1]
+    δx2, δy2 = displacements[v2]
+    u_local = [δx1, δy1, δx2, δy2] # m
+    fx1, fy1, fx2, fy2 = k_local * u_local # N / m * m -> N
+    return (v1 => Vector2D(fx1, fy1), v2 => Vector2D(fx2, fy2))
+end

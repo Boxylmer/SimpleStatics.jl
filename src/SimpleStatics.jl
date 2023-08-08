@@ -34,7 +34,7 @@ include("Solvers.jl")
 export solve_displacements
 export equilibrium_positions
 export solve_member_stresses
-
+export solve_reaction_forces
 
 include("Visual.jl")
 export plot_setup
