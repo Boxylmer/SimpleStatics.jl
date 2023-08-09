@@ -1,3 +1,4 @@
+
 function solve_displacements(setup::StaticSetup{T}, gsm::Matrix{T}) where T
     # setup.forces' index corresponds to the vertex id and contains a Vector2D
     force_vec = force_vector(setup)
@@ -15,11 +16,28 @@ function solve_displacements(setup::StaticSetup{T}, gsm::Matrix{T}) where T
 
     return displacement_vecs
 end
+
+
+"""
+    solve_displacements(setup)
+
+Solve the distances that each joint moves to keep the system stationary. The results of this function are necessary for most other properties that can be calculated. 
+"""
 solve_displacements(setup::StaticSetup) = solve_displacements(setup, global_stiffness_matrix(setup))
 
+"""
+    equilibrium_positions(setup, displacements)
+
+Given a setup and its displacements, calculate the equilibrium positions of all of the joints. Returned indices match joint indices.  
+"""
 equilibrium_positions(s::StaticSetup, displacements::Vector{<:Vector2D}) = s.positions .+ displacements
 
-"Negative -> Compressive, Positive -> Tensile, index matches member index" # todo docs
+"""
+    solve_member_stresses(setup, displacements)
+    
+Using already calculated `displacements`, determine the stresses each member undergoes when at equilibrium. 
+Compressive stresses are *negative and tensile stresses are *positive*, indexes match member ids.
+""" 
 function solve_member_stresses(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}) where T
     fs = zeros(T, n_members(setup))
     for edge_id in member_ids(setup)
@@ -43,7 +61,11 @@ function solve_member_stresses(setup::StaticSetup{T}, displacements::Vector{<:Ve
     return fs
 end
 
+"""
+    solve_reaction_forces(setup, displacements)
 
+Using already calculated `displacements`, find the forces that each constrained node needs to keep the system stationary. 
+"""
 function solve_reaction_forces(setup::StaticSetup{T}, displacements::Vector{<:Vector2D}) where T
     reaction_forces = zeros(Vector2D{T}, n_joints(setup))
 

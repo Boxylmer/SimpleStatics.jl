@@ -1,6 +1,7 @@
 BACKGROUND_COLOR = "antiquewhite"
 LINE_THICKNESS = 2
-FONT_SIZE = 12
+FONT_SIZE = 16
+POINT_SIZE = 4
 
 function find_domain(vals::AbstractArray{<:Number}, padding=0)
 min_x, max_x = vals[1], vals[1]
@@ -84,7 +85,21 @@ function defaults()
     setdash("solid")
 end
 
-function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, displacements=nothing, stresses=nothing, reaction_forces=nothing)
+"""
+    plot_setup(setup, name="default"; [dsize=800, padding, displacements, stresses, reactions])
+
+# Arguments
+- `setup::StaticSetup`: The setup to plot. 
+- `name::String`: The filename or path (without extension) of the image to be created.
+- `dsize::Integer`: The diagonal pixel size of the image. The actual width and height will depend on the setup being plotted. 
+- `padding::Float64`: The amount of extra distance to include on the border of the setup boundaries. 0 padding will make the image as small as possible, and you will likely lose details as they go off of the screen. Default is 0.4.
+
+# Additional details that can be included.
+- `displacements`: Previously calculated displacements using `solve_displacements`.
+- `stresses`: Previously calculated member stresses using `solve_member_stresses`.
+- `reactions`: Previously calculated reaction forces using `solve_reaction_forces`.
+"""
+function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, displacements=nothing, stresses=nothing, reactions=nothing)
     
     xdomain, ydomain = find_domain(s.positions, padding)
     xlen = xdomain[2] - xdomain[1]
@@ -158,7 +173,7 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
 
         sethue("lime")
         for (i, p) in enumerate(pts)
-            circle(displaced_pts[i], 2, action = :fill)
+            circle(displaced_pts[i], POINT_SIZE, action = :fill)
         end
     end
     
@@ -191,9 +206,9 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
     reaction_points = Vector{Point}()
     reaction_strings = Vector{String}()
     sethue("royalblue1")
-    if !isnothing(reaction_forces) && length(nonzero_force_indices) > 0
-        nonzero_reaction_indices = [i for i in eachindex(reaction_forces) if !(s.constraints[i] isa NoConstraint)]
-        nonzero_reaction_vectors = [reaction_forces[i] for i in nonzero_reaction_indices]
+    if !isnothing(reactions) && length(nonzero_force_indices) > 0
+        nonzero_reaction_indices = [i for i in eachindex(reactions) if !(s.constraints[i] isa NoConstraint)]
+        nonzero_reaction_vectors = [reactions[i] for i in nonzero_reaction_indices]
         nonzero_reaction_magnitudes = norm.(nonzero_reaction_vectors)
         nonzero_reaction_unit_vectors = [Point(v.x, -v.y) for v in unit_vector.(nonzero_reaction_vectors)]
         nonzero_reaction_pixel_lengths = _redistribute_linearly(nonzero_reaction_magnitudes, force_to_pixel_alpha) # reuse previous alpha to keep the forces "to scale" with each other
@@ -245,7 +260,7 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
     joint_strings = Vector{String}(undef, length(pts))
     for (i, p) in enumerate(pts)
         sethue("black")
-        circle(p, 2, action = :fill)
+        circle(p, POINT_SIZE, action = :fill)
 
         joint_points[i] = p
         joint_strings[i] = "J"*string(i)

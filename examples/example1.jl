@@ -25,4 +25,4 @@ d1 = solve_displacements(s1)
 st1 = solve_member_stresses(s1, d1)
 rf1 = solve_reaction_forces(s1, d1)
 
-plot_setup(s1, "1 -Solution"; displacements=d1, stresses=st1, reaction_forces=rf1)
+plot_setup(s1, "1 -Solution"; displacements=d1, stresses=st1, reactions=rf1)

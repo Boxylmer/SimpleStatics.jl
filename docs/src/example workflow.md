@@ -35,7 +35,7 @@ plot_setup(my_setup)
 ```
 
 **Notice the following**
-- Joint 1 was given an `AnchorConstraint()` which will keep it fixed in place. 
+- Joint 1 was given an [`AnchorConstraint()`](@ref) which will keep it fixed in place. 
 - Points were automatically labeled in the order they were created. 
 - Constraints were depicted in green denoting the kind of motion allowed for the joint. 
 
@@ -220,3 +220,13 @@ plot_setup(my_setup, displacements=displacements, stresses=member_stresses) # hi
 ```
 
 The result is a bit messy, but it looks like the maximum member stress was reduced!
+
+
+# 6. Calculate Reaction Forces
+
+We can see how these forces are affecting our constraints by using the `solve_reaction_forces(setup, displacements)` function, then passing in the result to our `plot_setup` function with the `reactions` keyword.
+
+```@example 1
+    reaction_forces = solve_reaction_forces(my_setup, displacements)
+    plot_setup(my_setup, displacements=displacements, stresses=member_stresses, reactions=reaction_forces)
+```

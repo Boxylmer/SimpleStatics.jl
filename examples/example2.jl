@@ -25,5 +25,5 @@ plot_setup(s2, "2 - Setup")
 d2 = solve_displacements(s2)
 st2 = solve_member_stresses(s2, d2)
 rf2 = solve_reaction_forces(s2, d2)
-plot_setup(s2,  "2 - Solution", stresses=st2, displacements=d2, reaction_forces=rf2)
+plot_setup(s2,  "2 - Solution", stresses=st2, displacements=d2, reactions=rf2)
 

@@ -3,12 +3,14 @@ abstract type StaticConstraint end
 
 abstract type SimpleConstraint <: StaticConstraint end
 
+"Default constraint that restricts no movement."
 struct NoConstraint <: SimpleConstraint end
+"Completely restrictive constraint that restricts all movement. "
 struct AnchorConstraint <: SimpleConstraint end
+"Restricts movement along the vertical axis only, permitting horizontal movement."
 struct XRollerConstraint <: SimpleConstraint end
+"Restricts movement along the vertical axis only, permitting horizontal movement."
 struct YRollerConstraint <: SimpleConstraint end
-
-
 
 struct StaticMaterial{AT, MT}
     area::AT # in square meters
@@ -40,6 +42,7 @@ struct StaticSetup{T}
     edge_to_vertices::Vector{<:UnorderedPair}  
 end 
 
+
 function StaticSetup(T::Type=Float64)
     g = SimpleGraph()
     positions = Vector{Vector2D{T}}() # vertex id -> position of that joint
@@ -53,10 +56,18 @@ end
 
 Base.eltype(::StaticSetup{T}) where T = T 
 
+"Get the total number of joints."
 n_joints(s::StaticSetup) = length(s.positions)
+
+"Get the total number of members."
 n_members(s::StaticSetup) = length(s.materials)
+
+"Get an iterator which traverses through all joint ids."
 joint_ids(s::StaticSetup) = 1:n_joints(s)
+
+"Get an iterator which traverses through all member ids."
 member_ids(s::StaticSetup) = 1:n_members(s)
+
 "Naive number of dergees of freedom in the system (i.e., before constraints)."
 n_dofs(s::StaticSetup) = 2 * n_joints(s)
 
@@ -67,7 +78,7 @@ terminal_joints(s::StaticSetup, member_id::Integer) = s.edge_to_vertices[member_
 initialxy(s::StaticSetup, vid::Integer) = s.positions[vid].x, s.positions[vid].y
 equilibriumxy(s::StaticSetup, displacements::Vector{<:Vector2D}, vid::Integer) = s.positions[vid].x + displacements[vid].x, s.positions[vid].y + displacements[vid].y
 
-
+# todo more fleshed out docs
 "Add a joint to the setup and return the index referring to that joint. The position should be set in meters."
 function add_joint!(setup::StaticSetup{T}, position::Vector2D{T}, constraint::StaticConstraint=NoConstraint()) where T
     node_index = n_joints(setup) + 1
