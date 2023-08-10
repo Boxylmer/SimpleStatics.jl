@@ -12,23 +12,34 @@ struct XRollerConstraint <: SimpleConstraint end
 "Restricts movement along the vertical axis only, permitting horizontal movement."
 struct YRollerConstraint <: SimpleConstraint end
 
-struct StaticMaterial{AT, MT}
+struct StaticMaterial{AT, MT, YT, DT}
     area::AT # in square meters
     modulus::MT # in pa or netwon / meter^2
+    yield::YT # pa or netwon / meter^2
+    density::DT  # g/cm3
 end
+
+StaticMaterial(a, m) = StaticMaterial(a, m, Inf, 0.0)
 
 module Materials
     import ..StaticMaterial
     # http://web.mit.edu/16.20/homepage/3_Constitutive/Constitutive_files/module_3_with_solutions.pdf
     PerfectMaterial()::StaticMaterial = StaticMaterial(1.0, 1e12)
-    Tungsten(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 410e9)
-    StainlessSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 195e9)
-    MildSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 196e9)
+    Tungsten(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 410e9, 0.75e9, 13.4)
+    StainlessSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 195e9, 0.215e9, 7.6)
+    # https://blog.thepipingmart.com/metals/mild-carbon-steel-properties-an-overview
+    MildSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 196e9, 245e6, 7.8)
+    
+
     # https://amesweb.info/Materials/Youngs-Modulus-of-Wood.aspx
-    PVC(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 0.0065e9)
+    PVC(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 0.0065e9, 15e6, 1.5)
     # https://core.ac.uk/download/pdf/153414189.pdf
-    Pine(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 9.6e9)
+    # https://www.engineeringtoolbox.com/timber-mechanical-properties-d_1789.html
+    Pine(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 4.141e9, 80e6, 0.8778118)
     Pine2x4() = Pine(0.00338709)
+
+
+
 end
 
 

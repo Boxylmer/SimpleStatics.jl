@@ -130,7 +130,7 @@ displacements[j5]
 plot_setup(my_setup, displacements=displacements) # hide
 ```
 
-Hmm... we're applying $5k lbf$ and only seeing about $0.17"$ of sag? That doesn't sound right. Surely 2x4 lumber isn't that strong? There's good news and bad news here. 
+Hmm... we're applying $5k lbf$ and only seeing about $0.4"$ of sag? That doesn't sound right. Surely 2x4 lumber isn't that strong? There's good news and bad news here. 
 - Good news: The 2x4 lumber you built your truss with is *absolutely* that strong.
 - Bad news: The screws you used to hold them together were *not*. 
 
