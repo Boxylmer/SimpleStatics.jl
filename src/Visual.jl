@@ -24,9 +24,13 @@ function find_domain(points::Vector{<:Vector2D}, padding=0)
         elseif pt.y < min_y; min_y = pt.y
         end
     end
-    xpad = padding * (max_x - min_x)
-    ypad = padding * (max_y - min_y)
-    return (min_x - xpad,  max_x + xpad), (min_y - ypad,  max_y + ypad)
+    diagpad = padding * sqrt((max_x - min_x) * (max_y - min_y))
+    # xpad = diagpad * (max_x - min_x)
+    # ypad = diagpad * (max_y - min_y)
+    return (min_x - diagpad,  max_x + diagpad), (min_y - diagpad,  max_y + diagpad)
+    # xpad = padding * (max_x - min_x)
+    # ypad = padding * (max_y - min_y)
+    # return (min_x - xpad,  max_x + xpad), (min_y - ypad,  max_y + ypad)
 end
 
 function transform_value(x, xbounds_original, xbounds_final)
@@ -76,40 +80,39 @@ function defaults()
 end
 
 """
-    plot_setup(setup, name="default"; [dsize=800, padding, displacements, stresses, reactions])
+    plot_setup(setup, [name]; [dsize=800, padding, displacements, stresses, reactions])
 
 # Arguments
 - `setup::StaticSetup`: The setup to plot. 
-- `name::String`: The filename or path (without extension) of the image to be created.
+- `name::String`: The filename or path (without extension) of the image to be created. If unspecified, image will be returned but not saved. 
 - `dsize::Integer`: The diagonal pixel size of the image. The actual width and height will depend on the setup being plotted. 
 - `padding::Float64`: The amount of extra distance to include on the border of the setup boundaries. 0 padding will make the image as small as possible, and you will likely lose details as they go off of the screen. Default is 0.4.
 
 # Additional details that can be included.
 - `displacements`: Previously calculated displacements using `solve_displacements`.
-- `stresses`: Previously calculated member stresses using `solve_member_stresses`.
+- `member_forces`: Previously calculated member forces using `solve_member_forces`.
 - `reactions`: Previously calculated reaction forces using `solve_reaction_forces`.
 """
-function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, displacements=nothing, stresses=nothing, reactions=nothing)
-    
+function plot_setup(s::StaticSetup, name=nothing; dsize=800, padding=0.4, displacements=nothing, member_forces=nothing, reactions=nothing)
+
     xdomain, ydomain = find_domain(s.positions, padding)
     xlen = xdomain[2] - xdomain[1]
     ylen = ydomain[2] - ydomain[1]
-    
     mag = sqrt(xlen^2 + ylen^2)
-    
-    xunit = xlen / mag
-    yunit = ylen / mag
-    
-    size = (xunit * dsize, yunit * dsize)
-    pts = transform_for_luxor(s.positions, size, xdomain, ydomain)
+    size = (xlen / mag * dsize, ylen / mag * dsize)
 
-    # @svg begin
-    svgim = Drawing(size[1], size[2], :svg, name * ".svg")
+
+    pts = transform_for_luxor(s.positions, size, xdomain, ydomain)
+    if isnothing(name)
+        svgim = Drawing(size[1], size[2], :svg,)  
+    else
+        svgim = Drawing(size[1], size[2], :svg, name * ".svg")  
+    end
     defaults()
     origin()
     background(BACKGROUND_COLOR)
 
-    
+
     sethue("black")
     ### Members
     member_strings = Vector{String}(undef, length(member_ids(s)))
@@ -132,7 +135,7 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
         sethue("green")
         displaced_pts = transform_for_luxor(s.positions .+ displacements, size, xdomain, ydomain) 
 
-        ### Stresses 
+        ### Forces 
         function draw_member(mid)
             i, j = s.edge_to_vertices[mid]
             p1 = displaced_pts[i]
@@ -140,15 +143,15 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
             line(p1, p2, action = :stroke)
         end
 
-        if isnothing(stresses)
+        if isnothing(member_forces)
             for mid in member_ids(s)
                 draw_member(mid)
             end
         else
-            sd = find_domain(stresses)
+            sd = find_domain(member_forces)
             for mid in member_ids(s)
                 
-                stress = stresses[mid]
+                stress = member_forces[mid]
 
                 if stress > 0
                     color = (stress / sd[2], 0, 0)
@@ -173,6 +176,8 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
     force_strings = Vector{String}()
 
     average_relative_force_length = 0.10 * sqrt(size[1]^2 + size[2]^2) # average force should consume 10% of the diagonal window size
+    average_relative_force_length = 0.10 * min(size[1],  size[2]) # average force should consume 20% of the smallest window dimension
+
 
     sethue("mediumvioletred")
     nonzero_force_indices = [i for i in eachindex(s.forces) if (s.forces[i].x != 0 || s.forces[i].y != 0)]
@@ -271,6 +276,8 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
     for i in eachindex(force_points, force_strings)
         draw_label(force_points[i], force_strings[i], "mediumvioletred", Point(-8, 8))
     end
+    
     finish()
+    
     return svgim
 end

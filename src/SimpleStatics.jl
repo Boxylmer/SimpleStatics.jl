@@ -16,12 +16,14 @@ include("StaticMaterial.jl")
 export StaticMaterial
 export Materials
 export weight
+export mass
 
 include("StaticSetup.jl")
 export StaticSetup
 export add_joint!
 export add_member!
 export set_force!
+export add_force!
 export set_constraint!
 export global_stiffness_matrix
 
@@ -38,8 +40,9 @@ export add_member_weights!
 include("Solvers.jl")
 export solve_displacements
 export equilibrium_positions
-export solve_member_stresses
+export solve_member_forces
 export solve_reaction_forces
+export solve_member_stresses
 
 include("Visual.jl")
 export plot_setup

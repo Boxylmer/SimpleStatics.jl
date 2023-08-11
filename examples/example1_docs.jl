@@ -1,4 +1,6 @@
+using Revise
 using SimpleStatics
+
 
 function build_truss(width_m, height_m, n, load_lbf=0; 
     thick_material=Materials.SquareTubing(Materials.MildSteel, 1.5 * 0.0381, 1.897 / 1000),   # 1.5" steel tubing with 14 gauge thickness
@@ -49,19 +51,29 @@ function build_truss(width_m, height_m, n, load_lbf=0;
     return s
 end
 
-
 n = 4
-s1 = build_truss(10, 2, n)
+width = (23 * 12 + 10) * 0.0254 # 23', 10" long -> Meters
+height = 18 * 0.0254 # 18" tall -> Meters
+s1 = build_truss(width, height, n)
 
 truss_midpoint_joint = n + 1
 
+add_force!(s1, truss_midpoint_joint, 0, -2224)  # 500lbf
 SimpleStatics.add_member_weights!(s1)
-# set_force!(s1, truss_midpoint_joint, 0, -1000)
 
-plot_setup(s1, "1 - Setup", dsize=1600)
+plot_setup(s1, dsize=3200)
+
 gsm1 = global_stiffness_matrix(s1)
 d1 = solve_displacements(s1) 
-st1 = solve_member_stresses(s1, d1)
+f1 = solve_member_forces(s1, d1)
 rf1 = solve_reaction_forces(s1, d1)
 
-plot_setup(s1, "1 -Solution"; dsize=1600, displacements=d1, stresses=st1, reactions=rf1)
+plot_setup(s1; dsize=3200, padding=0.4, displacements=d1, member_forces=f1, reactions=rf1)
+
+println(weight(s1))
+println(mass(s1))
+
+for (i, st) in enumerate(f1)
+    lbf = st / 4.44822
+    println("Member $i stress: $lbf lbf")
+end

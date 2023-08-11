@@ -14,7 +14,7 @@ using Measurements # todo add this to deps for docs
         j4 = add_joint!(s, 32.0 * 12, 0.0 * 12)
         j5 = add_joint!(s, 32.0 * 12, 12.0 * 12)
 
-        m = StaticMaterial(10., 30000)
+        m = StaticMaterial(10., 30000, 100, 100)
         m1 = add_member!(s, j1, j3, m)
         m2 = add_member!(s, j1, j2, m)
         m3 = add_member!(s, j2, j3, m)
@@ -104,8 +104,7 @@ using Measurements # todo add this to deps for docs
         large_steel_beam = Materials.SquareTubing(Materials.MildSteel, 1.5 * 0.0381, 1.897 / 1000)  # 1.5" steel tubing with 14 gauge thickness
         small_steel_beam = Materials.SquareTubing(Materials.MildSteel, 1.0 * 0.0381, 1.518 / 1000)  # 1.0" steel tubing with 16 gauge thickness
         @test weight(large_steel_beam, 1) > weight(small_steel_beam, 1)
-
-        
+        @test mass(large_steel_beam, 1) > mass(small_steel_beam, 1)
     end
 
     @testset "StaticSetup.jl" begin
@@ -145,8 +144,11 @@ using Measurements # todo add this to deps for docs
         gsm_constrained = SimpleStatics.constrained_array(gsm, m)
         @test gsm_constrained[2, 4] ≈ -2083 - 1/3
 
-
         @test member_angle(s, 2) == 0 
+
+        @test weight(s; g=1) != weight(s; g=9.81)
+        @test mass(s) > mass(s, 4) 
+         
     end
 
     @testset "Solvers.jl" begin
@@ -159,47 +161,47 @@ using Measurements # todo add this to deps for docs
         @test d[1] + setup.positions[1] == e[1]
         @test d[end] + setup.positions[end] == e[end]
 
-        s = solve_member_stresses(setup, d)
-        @test s[3] == s[end] == 0 # zero force members
-        @test s[1] ≈ (52 + 1/12)
+        f = solve_member_forces(setup, d)
+        @test f[3] == f[end] == 0 # zero force members
+        @test f[1] ≈ (52 + 1/12)
 
 
         r = solve_reaction_forces(setup, d)
         @test Base.rtoldefault(sum(setup.forces) + sum(r), SimpleStatics.Vector2D(0.0, 0.0)) ≈ 1.0587911840678754e-22 
         @test isapprox((sum(setup.forces) + sum(r)), SimpleStatics.Vector2D(0.0, 0.0), atol=1e-10)
 
-        # Edge Case 1: Test vertical stresses actually working
+        # Edge Case 1: Test vertical forces actually working
         s2 = example_setup()
         set_force!(s2, 3, 0, -10)
         d = solve_displacements(setup)
-        s = solve_member_stresses(setup, d)
+        f = solve_member_forces(setup, d)
 
         # Edge Case 2: All constraints used at once
         s3 = example_setup_constraints()
         d = solve_displacements(s3)
-        s = solve_member_stresses(s3, d)
-        @test s[2] != 0
-        @test s[1] ≈ s[4]
-
-        
-
+        f = solve_member_forces(s3, d)
+        @test f[2] != 0
+        @test f[1] ≈ f[4]
+        stresses = solve_member_stresses(s3, f)
+        @test stresses[3] ≈ 0
     end
 
     @testset "Visual.jl" begin
         output_folder = joinpath(@__DIR__, "test_output")
 
         setup = example_setup()
+        plot_setup(setup) # do it without a name
         plot_setup(setup, joinpath(output_folder, "basic"))
 
         d = solve_displacements(setup)
-        s = solve_member_stresses(setup, d)
+        f = solve_member_forces(setup, d)
         r = solve_reaction_forces(setup, d)
 
         plot_setup(setup, 
             joinpath(output_folder, "dsr"), 
             padding = 1.0,
             displacements = d,
-            stresses = s,
+            member_forces = f,
             reactions = r
         )
 
@@ -210,12 +212,12 @@ using Measurements # todo add this to deps for docs
         plot_setup(sx, joinpath(output_folder, "none-roller"))
         
 
-        # test case where stresses exist but displacements do not
+        # test case where forces exist but displacements do not
         setup = example_setup()
         plot_setup(setup, joinpath(output_folder, "basic"))
 
         d = solve_displacements(setup)
-        s = solve_member_stresses(setup, d)
+        f = solve_member_forces(setup, d)
         r = solve_reaction_forces(setup, d)
 
         plot_setup(setup, 

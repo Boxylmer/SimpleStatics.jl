@@ -238,6 +238,15 @@ function induced_forces(setup::StaticSetup, edge_id, displacements::Vector{<:Vec
     return (v1 => Vector2D(fx1, fy1), v2 => Vector2D(fx2, fy2))
 end
 
+"Get the weight, in Newtons, of a member by its member id."
+weight(setup::StaticSetup, mid::Integer; kwargs...) = weight(setup.materials[mid], member_length(setup, mid); kwargs...)
+
+weight(setup::StaticSetup; kwargs...) = sum((weight(setup, i; kwargs...) for i in member_ids(setup)))
+
+"Get the mass, in kg, of a member by its member id."
+mass(setup::StaticSetup, mid::Integer) = mass(setup.materials[mid], member_length(setup, mid))
+
+mass(setup::StaticSetup) = sum((mass(setup, i) for i in member_ids(setup)))
 
 """
     add_member_weights!(setup::StaticSetup)
@@ -253,7 +262,7 @@ end
 
 
 function add_member_weights!(setup::StaticSetup, mid::Integer)
-    w = weight(setup.materials[mid], member_length(setup, mid))
+    w = weight(setup, mid)
     joint_1, joint_2 = terminal_joints(setup, mid)
     add_force!(setup, joint_1, 0, -w/2)
     add_force!(setup, joint_2, 0, -w/2)

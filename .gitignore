@@ -5,3 +5,4 @@
 /docs/Manifest.toml
 /docs/build/
 /test/test_output/*
+!/test/test_output/output files will appear here

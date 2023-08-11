@@ -7,8 +7,11 @@ end
 
 StaticMaterial(a, m) = StaticMaterial(a, m, Inf, 0.0)
 
-"Calculate how much a given length of the material weighs, in Newtons."
-weight(m::StaticMaterial, length_m::Number) = m.area * length_m * m.density * 1e6
+"Calculate how much a given length of the material weighs, in Newtons. Optionally, gravity can be specified in m/s2."
+weight(m::StaticMaterial, length_m::Number; g=9.81) = mass(m, length_m) * g  # kg * m/s2 = N
+
+"Calculate the mass of a material in kg given its length in meters."
+mass(m::StaticMaterial, length_m::Number) = m.area * length_m * m.density * 1e6 / 1000 # m * m2 * g/cm3 * 1e6cm3/m3 * 1kg/1000g -> kg
 
 module Materials
     import ..StaticMaterial

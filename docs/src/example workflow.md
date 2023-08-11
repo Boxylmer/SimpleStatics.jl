@@ -135,40 +135,40 @@ Hmm... we're applying $5k lbf$ and only seeing about $0.4"$ of sag? That doesn't
 - Bad news: The screws you used to hold them together were *not*. 
 
 
-# 5. Calculate Member Stresses
+# 5. Calculate Member Forces
 Okay, so how do we solve this? 
 Let's say a standard deck screw can hold $100lbf$ ($444.822N$)  comfortably before it shears, and we use two screws per board, getting about $850N$ (conservatively) of force that each board (member) can handle before it breaks. 
 
-We can calculate the stress each board is under with the `solve_member_stresses(setup, displacements)` function. 
+We can calculate the force each board is under with the `solve_member_forces(setup, displacements)` function. 
 
 !!! tip "Remember, plot_setup is your friend!"
-    We can also pass the result of `solve_member_stresses` into our `plot_setup` function using the `stresses` keyword! Though these will only be visible if `displacements` are also present. 
+    We can also pass the result of `solve_member_forces` into our `plot_setup` function using the `member_forces` keyword! Though these will only be visible if `displacements` are also present. 
     
 
 ```@example 1
-member_stresses = solve_member_stresses(my_setup, displacements)
-maximum(member_stresses), minimum(member_stresses) # in Newtons
+member_forces = solve_member_forces(my_setup, displacements)
+maximum(member_forces), minimum(member_forces) # in Newtons
 ```
 
-First and foremost we notice that, as expected, our truss will be destroyed ten times over given the maximum stress on the members. 
+First and foremost we notice that, as expected, our truss will be destroyed ten times over given the maximum force on the members. 
 !!! note "Sign conventions are important!"
-    Conventionally, negative stresses indicate **tension** and positive stresses indicate **compression**. This signage is arbitrary, but it's what was chosen for this library.
+    Conventionally, negative forces indicate **tension** and positive forces indicate **compression**. This signage is arbitrary, but it's what was chosen for this library.
 
 Lets switch back to our $50lbf$ setup and check the maximum member force to see if we can at least bear that load without the risk of failure.
 
 ```@example 1
 set_force!(my_setup, j5, 0, -222.411) # about 50 pounds force. 
 displacements = solve_displacements(my_setup)
-member_stresses = solve_member_stresses(my_setup, displacements)
+member_forces = solve_member_forces(my_setup, displacements)
 ```
 
 ```@example 1
-plot_setup(my_setup, displacements=displacements, stresses=member_stresses) # hide
+plot_setup(my_setup, displacements=displacements, member_forces=member_forces) # hide
 ```
 
 Now we have some interesting results! Lets go over them, noting that compressive forces are shown in red and tensile forces in blue. 
 - Notice that **M3** and **M11** are so-called *zero force members*. These members technically don't bear any load, but are necessary to constrain the system of equations that our setup has generated.
-- **M6** and **M8** have equal and opposite stresses equal to the load on **J5**, whereas **M9** and **M10**, as well as **M4** and **M5** are much lower, due to the load being distributed (unevenly) between the two. 
+- **M6** and **M8** have equal and opposite forces equal to the load on **J5**, whereas **M9** and **M10**, as well as **M4** and **M5** are much lower, due to the load being distributed (unevenly) between the two. 
 
 
 What will happen if we modify our truss slightly by recreating it with a member from **J4** to **J7** rather than **J5** to **J6**. 
@@ -199,11 +199,11 @@ What will happen if we modify our truss slightly by recreating it with a member 
     add_member!(my_setup, j7, j8, m) # hide
     set_force!(my_setup, j5, 0, -222.411)
     displacements = solve_displacements(my_setup)
-    member_stresses = solve_member_stresses(my_setup, displacements)
+    member_forces = solve_member_forces(my_setup, displacements)
 ```
 
 ```@example 1
-plot_setup(my_setup, displacements=displacements, stresses=member_stresses) # hide
+plot_setup(my_setup, displacements=displacements, forces=member_forces) # hide
 ```
 
 Apparently nothing good, as now one extra member is under a significantly higher load. What if we add a few extra cross members? 
@@ -211,15 +211,15 @@ Apparently nothing good, as now one extra member is under a significantly higher
     add_member!(my_setup, j2, j5, m) 
     add_member!(my_setup, j5, j6, m) 
     displacements = solve_displacements(my_setup)
-    member_stresses = solve_member_stresses(my_setup, displacements)
-    maximum(member_stresses), minimum(member_stresses)
+    member_forces = solve_member_forces(my_setup, displacements)
+    maximum(member_forces), minimum(member_forces)
 ```
 
 ```@example 1
-plot_setup(my_setup, displacements=displacements, stresses=member_stresses) # hide
+plot_setup(my_setup, displacements=displacements, forces=member_forces) # hide
 ```
 
-The result is a bit messy, but it looks like the maximum member stress was reduced!
+The result is a bit messy, but it looks like the maximum member force was reduced!
 
 
 # 6. Calculate Reaction Forces
@@ -228,5 +228,5 @@ We can see how these forces are affecting our constraints by using the `solve_re
 
 ```@example 1
     reaction_forces = solve_reaction_forces(my_setup, displacements)
-    plot_setup(my_setup, displacements=displacements, stresses=member_stresses, reactions=reaction_forces)
+    plot_setup(my_setup, displacements=displacements, forces=member_forces, reactions=reaction_forces)
 ```
