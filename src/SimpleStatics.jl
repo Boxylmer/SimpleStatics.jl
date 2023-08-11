@@ -1,21 +1,23 @@
 module SimpleStatics
-using Graphs
 using LinearAlgebra
 
 using Luxor
 
 
 include("HelperFunctions.jl")
-include("Base.jl")
+
+include("StaticConstraint.jl")
 export NoConstraint
 export AnchorConstraint
 export XRollerConstraint
 export YRollerConstraint
 
+include("StaticMaterial.jl")
 export StaticMaterial
 export Materials
+export weight
 
-
+include("StaticSetup.jl")
 export StaticSetup
 export add_joint!
 export add_member!
@@ -27,6 +29,9 @@ export n_joints
 export n_members
 export joint_ids
 export member_ids
+export member_angle
+
+export add_member_weights!
 
 
 

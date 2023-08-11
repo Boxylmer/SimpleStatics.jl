@@ -21,6 +21,8 @@ struct Vector2D{T}
     x::T
     y::T
 end
+Vector2D(x, y) = Vector2D(promote(x, y)...)
+
 # Addition
 Base.:+(u::Vector2D, v::Vector2D) = Vector2D(u.x + v.x, u.y + v.y)
 
@@ -58,4 +60,20 @@ end
 
 Base.eltype(::Vector2D{T}) where T = T 
 
-Base.isapprox(a::Vector2D, b::Vector2D) = a.x ≈ b.x && a.y ≈ b.y
+function Base.isapprox(a::Vector2D, b::Vector2D; atol=0.0, rtol=Base.rtoldefault(a,b))
+    x_approx = abs(a.x - b.x) <= atol + rtol * abs(b.x)
+    y_approx = abs(a.y - b.y) <= atol + rtol * abs(b.y)
+    return x_approx && y_approx
+end
+
+function Base.rtoldefault(a::Vector2D{T}, b::Vector2D{T}) where T
+    # Get the machine epsilon for type T
+    epsilon = eps(T)
+
+    # Compute relative tolerances based on the magnitude of a and b
+    ra = maximum([abs(a.x), abs(a.y)])
+    rb = maximum([abs(b.x), abs(b.y)])
+
+    # Return the relative tolerance based on the larger of the two magnitudes
+    return sqrt(epsilon) * maximum([ra, rb])
+end

@@ -1,68 +1,20 @@
-
-abstract type StaticConstraint end
-
-abstract type SimpleConstraint <: StaticConstraint end
-
-"Default constraint that restricts no movement."
-struct NoConstraint <: SimpleConstraint end
-"Completely restrictive constraint that restricts all movement. "
-struct AnchorConstraint <: SimpleConstraint end
-"Restricts movement along the vertical axis only, permitting horizontal movement."
-struct XRollerConstraint <: SimpleConstraint end
-"Restricts movement along the vertical axis only, permitting horizontal movement."
-struct YRollerConstraint <: SimpleConstraint end
-
-struct StaticMaterial{AT, MT, YT, DT}
-    area::AT # in square meters
-    modulus::MT # in pa or netwon / meter^2
-    yield::YT # pa or netwon / meter^2
-    density::DT  # g/cm3
-end
-
-StaticMaterial(a, m) = StaticMaterial(a, m, Inf, 0.0)
-
-module Materials
-    import ..StaticMaterial
-    # http://web.mit.edu/16.20/homepage/3_Constitutive/Constitutive_files/module_3_with_solutions.pdf
-    PerfectMaterial()::StaticMaterial = StaticMaterial(1.0, 1e12)
-    Tungsten(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 410e9, 0.75e9, 13.4)
-    StainlessSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 195e9, 0.215e9, 7.6)
-    # https://blog.thepipingmart.com/metals/mild-carbon-steel-properties-an-overview
-    MildSteel(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 196e9, 245e6, 7.8)
-    
-
-    # https://amesweb.info/Materials/Youngs-Modulus-of-Wood.aspx
-    PVC(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 0.0065e9, 15e6, 1.5)
-    # https://core.ac.uk/download/pdf/153414189.pdf
-    # https://www.engineeringtoolbox.com/timber-mechanical-properties-d_1789.html
-    Pine(area_m2::Number)::StaticMaterial = StaticMaterial(area_m2, 4.141e9, 80e6, 0.8778118)
-    Pine2x4() = Pine(0.00338709)
-
-
-
-end
-
-
 struct StaticSetup{T}
-    graph::SimpleGraph
     positions::Vector{<:Vector2D{T}} # Meters
     forces::Vector{<:Vector2D{T}} # newtons
     constraints::Vector{<:StaticConstraint}
-    materials::Vector{<:StaticMaterial{T}}  # 
+    materials::Vector{<:StaticMaterial}  # 
     vertices_to_edge::Dict{UnorderedPair, Int32}
     edge_to_vertices::Vector{<:UnorderedPair}  
 end 
 
-
 function StaticSetup(T::Type=Float64)
-    g = SimpleGraph()
     positions = Vector{Vector2D{T}}() # vertex id -> position of that joint
     forces = Vector{Vector2D{T}}() # vertex id -> force vector acting on that joint
     constraints = Vector{StaticConstraint}() # vertex id -> constraint for that joint
     materials = Vector{StaticMaterial{T}}() # edge id -> material for that member
     vertices_to_edge = Dict{UnorderedPair, Int32}() # use two vertices ids to look up the edge id connecting them
     edge_to_vertices = Vector{UnorderedPair}() # use an edge id to get the vertices it joins
-    return StaticSetup(g, positions, forces, constraints, materials, vertices_to_edge, edge_to_vertices)
+    return StaticSetup(positions, forces, constraints, materials, vertices_to_edge, edge_to_vertices)
 end
 
 Base.eltype(::StaticSetup{T}) where T = T 
@@ -89,11 +41,9 @@ terminal_joints(s::StaticSetup, member_id::Integer) = s.edge_to_vertices[member_
 initialxy(s::StaticSetup, vid::Integer) = s.positions[vid].x, s.positions[vid].y
 equilibriumxy(s::StaticSetup, displacements::Vector{<:Vector2D}, vid::Integer) = s.positions[vid].x + displacements[vid].x, s.positions[vid].y + displacements[vid].y
 
-# todo more fleshed out docs
 "Add a joint to the setup and return the index referring to that joint. The position should be set in meters."
 function add_joint!(setup::StaticSetup{T}, position::Vector2D{T}, constraint::StaticConstraint=NoConstraint()) where T
     node_index = n_joints(setup) + 1
-    add_vertex!(setup.graph)
     push!(setup.positions, position)
     push!(setup.constraints, constraint)
     push!(setup.forces, Vector2D(T(0), T(0)))
@@ -113,7 +63,6 @@ function add_member!(setup::StaticSetup, j1::Int, j2::Int, material::StaticMater
         throw(ArgumentError("A member between these nodes already exists."))
     end
     
-    add_edge!(setup.graph, j1, j2)
     push!(setup.materials, material)
     n = length(setup.materials)
     setup.vertices_to_edge[edge_key] = n
@@ -122,7 +71,7 @@ function add_member!(setup::StaticSetup, j1::Int, j2::Int, material::StaticMater
 end
 
 "Set the force at a joint, in Newtons."
-function set_force!(setup::StaticSetup{T}, joint_index::Int, force::Vector2D{T}) where T
+function set_force!(setup::StaticSetup, joint_index::Int, force::Vector2D)
     if typeof(setup.constraints[joint_index]) <: AnchorConstraint
         @warn "Force set on fully constrained joint! This won't cause anything to happen. Did you mean to place this force somewhere else?"
     end
@@ -131,6 +80,12 @@ end
 
 set_force!(setup::StaticSetup{T}, ji::Integer, fx::Number, fy::Number) where T = set_force!(setup, ji, Vector2D(convert(T, fx), convert(T, fy)))
 
+"Add a force to the joint, in Newtons."
+function add_force!(setup::StaticSetup, ji::Integer, force::Vector2D)
+    setup.forces[ji] = setup.forces[ji] + force
+end
+
+add_force!(setup::StaticSetup{T}, ji::Integer, fx::Number, fy::Number) where T = add_force!(setup, ji, Vector2D(convert(T, fx), convert(T, fy)))
 
 function set_constraint!(setup::StaticSetup, joint_index::Int, constraint::StaticConstraint)
     setup.constraints[joint_index] = constraint
@@ -273,7 +228,7 @@ end
 original_array(arr::AbstractArray) = parent(arr)
 
 
-function induced_forces(setup, edge_id, displacements::Vector{<:Vector2D})
+function induced_forces(setup::StaticSetup, edge_id, displacements::Vector{<:Vector2D})
     k_local = member_stiffness_matrix(setup, edge_id) # N / m
     v1, v2 = terminal_joints(setup, edge_id)
     δx1, δy1 = displacements[v1]
@@ -281,4 +236,25 @@ function induced_forces(setup, edge_id, displacements::Vector{<:Vector2D})
     u_local = [δx1, δy1, δx2, δy2] # m
     fx1, fy1, fx2, fy2 = k_local * u_local # N / m * m -> N
     return (v1 => Vector2D(fx1, fy1), v2 => Vector2D(fx2, fy2))
+end
+
+
+"""
+    add_member_weights!(setup::StaticSetup)
+
+Add the weights that each ALL members exert on the setup as forces to their corresponding nodes.
+- Note that nothing is checking if this function is being called multiple times, if you accidentally call this function twice, members will just act like they're twice as heavy. 
+"""
+function add_member_weights!(setup::StaticSetup)
+    for mid in member_ids(setup)
+        add_member_weights!(setup, mid)
+    end
+end
+
+
+function add_member_weights!(setup::StaticSetup, mid::Integer)
+    w = weight(setup.materials[mid], member_length(setup, mid))
+    joint_1, joint_2 = terminal_joints(setup, mid)
+    add_force!(setup, joint_1, 0, -w/2)
+    add_force!(setup, joint_2, 0, -w/2)
 end

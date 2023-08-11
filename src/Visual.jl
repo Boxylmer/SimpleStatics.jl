@@ -4,7 +4,7 @@ FONT_SIZE = 16
 POINT_SIZE = 4
 
 function find_domain(vals::AbstractArray{<:Number}, padding=0)
-min_x, max_x = vals[1], vals[1]
+    min_x, max_x = vals[1], vals[1]
     for v in vals
         if v > max_x; max_x = v
         elseif v < min_x; min_x = v
@@ -46,23 +46,13 @@ function transform_for_luxor(pts::Vector{<:Vector2D}, canvas_size, xdomain, ydom
     return luxor_pts
 end
 
-function transform_for_luxor(pts::Vector{<:Vector2D}, canvas_size, padding=0)
-    xdomain, ydomain = find_domain(pts, padding)
-    return transform_for_luxor(pts, canvas_size, xdomain, ydomain)
-end
-
 function redistribute_linearly_alpha(values, desired_average)
     non_zero_vals = filter(x -> !(x ≈ 0), values)
     average = sum(non_zero_vals) / length(non_zero_vals)
     return desired_average / average
 end
 
-function redistribute_linearly(values, desired_average)
-    alpha = redistribute_linearly_alpha(values, desired_average)
-    return _redistribute_linearly(values, alpha)
-end
-
-function _redistribute_linearly(values, alpha)
+function redistribute_linearly(values, alpha)
     T = [alpha * v for v in values]
     return T
 end
@@ -191,7 +181,7 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
     nonzero_force_unit_vectors = [Point(v.x, -v.y) for v in unit_vector.(nonzero_force_vectors)]
 
     force_to_pixel_alpha = redistribute_linearly_alpha(nonzero_force_magnitudes, average_relative_force_length)
-    nonzero_force_pixel_lengths = _redistribute_linearly(nonzero_force_magnitudes, force_to_pixel_alpha)
+    nonzero_force_pixel_lengths = redistribute_linearly(nonzero_force_magnitudes, force_to_pixel_alpha)
     nonzero_force_pixel_vectors = nonzero_force_pixel_lengths .* nonzero_force_unit_vectors
     for (i, j) in enumerate(nonzero_force_indices)
         p1 = pts[j]
@@ -211,7 +201,7 @@ function plot_setup(s::StaticSetup, name="default"; dsize=800, padding=0.4, disp
         nonzero_reaction_vectors = [reactions[i] for i in nonzero_reaction_indices]
         nonzero_reaction_magnitudes = norm.(nonzero_reaction_vectors)
         nonzero_reaction_unit_vectors = [Point(v.x, -v.y) for v in unit_vector.(nonzero_reaction_vectors)]
-        nonzero_reaction_pixel_lengths = _redistribute_linearly(nonzero_reaction_magnitudes, force_to_pixel_alpha) # reuse previous alpha to keep the forces "to scale" with each other
+        nonzero_reaction_pixel_lengths = redistribute_linearly(nonzero_reaction_magnitudes, force_to_pixel_alpha) # reuse previous alpha to keep the forces "to scale" with each other
         nonzero_reaction_pixel_vectors = nonzero_reaction_pixel_lengths .* nonzero_reaction_unit_vectors
 
         for (i, j) in enumerate(nonzero_reaction_indices)

@@ -1,8 +1,12 @@
 using SimpleStatics
 
-function build_truss(width_m, height_m, n)
+function build_truss(width_m, height_m, n, load_lbf=0; 
+    thick_material=Materials.SquareTubing(Materials.MildSteel, 1.5 * 0.0381, 1.897 / 1000),   # 1.5" steel tubing with 14 gauge thickness
+    medium_material=Materials.SquareTubing(Materials.MildSteel, 1.0 * 0.0381, 1.518 / 1000),  # 1.0" steel tubing with 16 gauge thickness
+    # thin_material=Materials.SquareTubing(Materials.MildSteel, 1.0 * 0.0381, 1.518 / 1000)
+    )
+
     s = StaticSetup()
-    
     
     m = width_m / (2*n)
     
@@ -21,20 +25,20 @@ function build_truss(width_m, height_m, n)
     top_bar_members = []
     for i in top_joint_indices[1:end-1]
         m = add_member!(s, i, i+1)
-        push!(top_bar_members, m)
+        push!(top_bar_members, m, thick_material)
     end
 
     bottom_bar_members = []
     for i in bottom_joint_indices[1:end-1]
         m = add_member!(s, i, i+1)
-        push!(bottom_bar_members, m)
+        push!(bottom_bar_members, m, medium_material)
     end
     # @show bottom_bar_members
 
     cross_members = []
     for i in 1:n
         for j in -1:1
-            m = add_member!(s, bottom_joint_indices[i], top_joint_indices[2*i + j])
+            m = add_member!(s, bottom_joint_indices[i], top_joint_indices[2*i + j], medium_material)
             push!(cross_members, m)
         end
     end
@@ -45,10 +49,14 @@ function build_truss(width_m, height_m, n)
     return s
 end
 
+
 n = 4
 s1 = build_truss(10, 2, n)
+
 truss_midpoint_joint = n + 1
-set_force!(s1, truss_midpoint_joint, 0, -1000)
+
+SimpleStatics.add_member_weights!(s1)
+# set_force!(s1, truss_midpoint_joint, 0, -1000)
 
 plot_setup(s1, "1 - Setup", dsize=1600)
 gsm1 = global_stiffness_matrix(s1)
