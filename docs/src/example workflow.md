@@ -203,7 +203,7 @@ What will happen if we modify our truss slightly by recreating it with a member 
 ```
 
 ```@example 1
-plot_setup(my_setup, displacements=displacements, forces=member_forces) # hide
+plot_setup(my_setup, displacements=displacements, member_forces=member_forces) # hide
 ```
 
 Apparently nothing good, as now one extra member is under a significantly higher load. What if we add a few extra cross members? 
@@ -216,7 +216,7 @@ Apparently nothing good, as now one extra member is under a significantly higher
 ```
 
 ```@example 1
-plot_setup(my_setup, displacements=displacements, forces=member_forces) # hide
+plot_setup(my_setup, displacements=displacements, member_forces=member_forces) # hide
 ```
 
 The result is a bit messy, but it looks like the maximum member force was reduced!
@@ -228,5 +228,5 @@ We can see how these forces are affecting our constraints by using the `solve_re
 
 ```@example 1
     reaction_forces = solve_reaction_forces(my_setup, displacements)
-    plot_setup(my_setup, displacements=displacements, forces=member_forces, reactions=reaction_forces)
+    plot_setup(my_setup, displacements=displacements, member_forces=member_forces, reactions=reaction_forces)
 ```

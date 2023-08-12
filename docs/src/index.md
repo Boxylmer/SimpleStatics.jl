@@ -21,5 +21,5 @@ Check out the [Example Workflow](@ref)
 
 ## Where can I find more examples?
 
-### [Example 1 - Mild Steel Truss](@ref)
+### [Example 1 - Mild Steel Warren Truss](@ref)
 A simple truss made from mild steel, where we get to see some significant deformations due to loading.

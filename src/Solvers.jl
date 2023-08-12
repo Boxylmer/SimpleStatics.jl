@@ -91,3 +91,17 @@ function solve_member_stresses(setup::StaticSetup, forces::AbstractVector)
     end
     return stresses
 end
+
+"""
+    solve_stress_utilization(setup, stresses)
+
+Calculate how close each member is to its yield strength, where 0 is no stress and 1 is right at the yield point of the member.
+- Stresses can be calculated via `solve_member_stresses`.
+"""
+function solve_stress_utilization(setup::StaticSetup, stresses::AbstractVector)
+    percent_yields = similar(stresses)
+    for (i, mid) in enumerate(member_ids(setup))
+        percent_yields[i] = stresses[i] / setup.materials[mid].yield
+    end
+    return percent_yields
+end

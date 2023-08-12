@@ -43,6 +43,7 @@ export equilibrium_positions
 export solve_member_forces
 export solve_reaction_forces
 export solve_member_stresses
+export solve_stress_utilization
 
 include("Visual.jl")
 export plot_setup
