@@ -10,7 +10,7 @@ function build_truss(width_m, height_m, n, top_load = 0;
 
     s = StaticSetup()
     
-    m = width_m / (2*n)
+    segment_len = width_m / (2*n)
     
     top_joint_indices = []
     for m in range(0, width_m, 2n + 1)
@@ -19,7 +19,7 @@ function build_truss(width_m, height_m, n, top_load = 0;
     end
     
     bottom_joint_indices = []
-    for m in range(m, width_m - m, n)
+    for m in range(segment_len, width_m - segment_len, n)
         j = add_joint!(s, m, 0)
         push!(bottom_joint_indices, j)
     end

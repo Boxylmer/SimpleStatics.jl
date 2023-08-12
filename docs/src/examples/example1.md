@@ -77,3 +77,26 @@ So that was a *lot* of code. Before we pick this apart, lets just take a look at
 ```@example d1
 plot_setup(build_truss(width, height, 3), dsize=1500)
 ```
+
+So, in this function we start by defining some materials and dimensions, as well as the number of cross member repeat units `n` and the `top_load` that will be distributed over our truss itself. 
+```Julia
+function build_truss(width_m, height_m, n, top_load = 0; 
+    thick_material=Materials.SquareTubing(Materials.MildSteel, 1.5 * 0.0381, 1.897 / 1000),   # 1.5" steel tubing with 14 gauge thickness
+    medium_material=Materials.SquareTubing(Materials.MildSteel, 1.0 * 0.0381, 1.518 / 1000),  # 1.0" steel tubing with 16 gauge thickness
+    thin_material=Materials.SquareTubing(Materials.MildSteel, 0.75 * 0.0381, 1.518 / 1000)    # .75" steel tubing with 16 gauge thickness
+    )
+```
+
+Then, we start initialize our setup and define `segment_length`, or the length of 
+
+```Julia
+s = StaticSetup()
+    
+segment_len = width_m / (2*n)
+
+top_joint_indices = []
+for m in range(0, width_m, 2n + 1)
+    j = add_joint!(s, m, height_m)
+    push!(top_joint_indices, j)
+end
+```
