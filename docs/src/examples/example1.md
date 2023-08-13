@@ -7,7 +7,7 @@ We will do this by:
 1. [Making a function that will generate a truss based on a few parameters.](@ref d1_part1)
 2. [Generating a number of trusses with a certain load and analyzing it.](@ref d1_part2)
 3. [Viewing stresses and finding structural weak points.](@ref d1_part3)
-
+4. [Seeing what happens under extreme loads.](@ref d1_part4)
 
 ## [1. Making the setup function](@id d1_part1)
 
@@ -415,4 +415,29 @@ plot_setup(trusses[5]; dsize=1000, displacements=displacements[5], member_forces
 plot_setup(trusses[10]; dsize=1000, displacements=displacements[10], member_forces=member_stresses[10], reactions=reactions[10], draw_labels=false)
 ```
 
-Interesting! So the cross members are unders the most stress. This makes sense, as they're made from the thinnest material we had. Note that since stress is the force over the materials cross sectional area, the member highlighting would be the same for either property if all members were the made from the same material. 
+Interesting! So the cross members are under the most stress. This makes sense, as they're made from the thinnest material we had. Note that since stress is the force normalized by the materials cross sectional area, the member highlighting would be the same for either property if all members were the made from the same material. 
+
+
+
+## [4. Increasing the load.](@id d1_part4)
+For the sake of seeing deformations, lets increase the load until we see some interesting changes in our structure. 
+
+
+```@example d1
+load = 100000 * 0.453592 * 9.81 # lbf -> N, 100000 lb load 
+tr = build_truss(width, height, 5, load)
+displacements = solve_displacements(tr)
+forces = solve_member_forces(tr, displacements)
+reactions = solve_reaction_forces(tr, displacements)
+member_stresses = solve_member_stresses(tr, forces)
+plot_setup(tr; dsize=1000, displacements=displacements, member_forces=member_stresses, reactions=reactions, draw_labels=false)
+```
+
+
+Clearly this would destroy the truss, as we can see the stress utilization:
+
+```@example d1
+maximum(solve_stress_utilization(tr, member_stresses))
+```
+
+The cross member is under more then 6x its yield stress. 
