@@ -60,7 +60,7 @@ height = 18 * 0.0254 # 18" tall -> Meters
 s1 = build_truss(width, height, 4)
 load = 500 * 0.453592 * 9.81 # N
 
-nvals = 1:100
+nvals = 1:10
 trusses = [build_truss(width, height, nval, load) for nval in nvals]
 displacements = solve_displacements.(trusses)
 forces = solve_member_forces.(trusses, displacements)

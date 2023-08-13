@@ -93,7 +93,9 @@ end
 - `member_forces`: Previously calculated member forces using `solve_member_forces`.
 - `reactions`: Previously calculated reaction forces using `solve_reaction_forces`.
 """
-function plot_setup(s::StaticSetup, name=nothing; dsize=800, padding=0.4, displacements=nothing, member_forces=nothing, reactions=nothing)
+function plot_setup(s::StaticSetup, name=nothing; 
+    dsize=800, padding=0.4, displacements=nothing, member_forces=nothing, reactions=nothing,
+    draw_labels=true)
 
     xdomain, ydomain = find_domain(s.positions, padding)
     xlen = xdomain[2] - xdomain[1]
@@ -124,8 +126,10 @@ function plot_setup(s::StaticSetup, name=nothing; dsize=800, padding=0.4, displa
         p2 = pts[j]
         line(p1, p2, action = :stroke)
         # draw_label("M"*string(mid), midpoint(p1, p2), color)
-        member_strings[mid] = "M"*string(mid)
-        member_points[mid] = midpoint(p1, p2)
+        if draw_labels
+            member_strings[mid] = "M"*string(mid)
+            member_points[mid] = midpoint(p1, p2)
+        end
         # label("M"*string(mid), :NE, midpoint(p1, p2))
     end
     setdash("solid")
@@ -264,17 +268,19 @@ function plot_setup(s::StaticSetup, name=nothing; dsize=800, padding=0.4, displa
 
 
     ### Labels!
-    for i in eachindex(joint_points, joint_strings)
-        draw_label(joint_points[i], joint_strings[i], "black")
-    end
-    for i in eachindex(member_points, member_strings)
-        draw_label(member_points[i], member_strings[i], "black")
-    end
-    for i in eachindex(reaction_points, reaction_strings)
-        draw_label(reaction_points[i], reaction_strings[i], "royalblue1", Point(-8, 8))
-    end
-    for i in eachindex(force_points, force_strings)
-        draw_label(force_points[i], force_strings[i], "mediumvioletred", Point(-8, 8))
+    if draw_labels
+        for i in eachindex(joint_points, joint_strings)
+            draw_label(joint_points[i], joint_strings[i], "black")
+        end
+        for i in eachindex(member_points, member_strings)
+            draw_label(member_points[i], member_strings[i], "black")
+        end
+        for i in eachindex(reaction_points, reaction_strings)
+            draw_label(reaction_points[i], reaction_strings[i], "royalblue1", Point(-8, 8))
+        end
+        for i in eachindex(force_points, force_strings)
+            draw_label(force_points[i], force_strings[i], "mediumvioletred", Point(-8, 8))
+        end
     end
     
     finish()
