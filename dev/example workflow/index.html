@@ -175,7 +175,7 @@ add_member!(my_setup, j7, j8, m)</code></pre><img src='data:image/svg+xml;utf-8,
 </g>
 </svg>
 '/><p>Now we can see a very nice pink arrow depicting our force and how it&#39;s acting on our structure!</p><h1 id=".-Calculate-Displacements"><a class="docs-heading-anchor" href="#.-Calculate-Displacements">4. Calculate Displacements</a><a id=".-Calculate-Displacements-1"></a><a class="docs-heading-anchor-permalink" href="#.-Calculate-Displacements" title="Permalink"></a></h1><p>After completing step 3, we&#39;ve fully defined a statics problem. Now the question is: <em>What can we actually do with it?</em> The first question is generally centered around how the forces acting on the truss deforms it, which we can easily calculate using the <code>solve_displacements(setup)</code> function!</p><div class="admonition is-success"><header class="admonition-header">Joint indices match displacements</header><div class="admonition-body"><p>The displacements we get out of this funciton will follow the same order as the joints we created, so we can see the displacement that happened to <strong>J5</strong>, we simply access it in the calculated displacements using <code>j5</code>. We can also access each component of the displacements via <code>displacement[idx].x</code> or -<code>.y</code> if needed. </p></div></div><pre><code class="language-julia hljs">displacements = solve_displacements(my_setup)
-displacements[j5]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SimpleStatics.Vector2D{Float64}(1.5857119374224258e-5, -0.00010035062436817928)</code></pre><p>It looks like <strong>J5</strong> moved down by about <span>$3.4\times10^{-5}m$</span> or <span>$0.00137&quot;$</span>. This certainly isn&#39;t a lot. Let see what happened visually as well to confirm this for all of our points!</p><p>This time our plot_setup function will need to have the <code>displacements</code> data as well to be able to show us what actually happened. </p><pre><code class="language-julia hljs">plot_setup(my_setup, displacements=displacements)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
+displacements[j5]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SimpleStatics.Vector2D{Float64}(1.585711937422426e-5, -0.00010035062436817926)</code></pre><p>It looks like <strong>J5</strong> moved down by about <span>$3.4\times10^{-5}m$</span> or <span>$0.00137&quot;$</span>. This certainly isn&#39;t a lot. Let see what happened visually as well to confirm this for all of our points!</p><p>This time our plot_setup function will need to have the <code>displacements</code> data as well to be able to show us what actually happened. </p><pre><code class="language-julia hljs">plot_setup(my_setup, displacements=displacements)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="725.607174pt" height="336.889045pt" viewBox="0 0 725.607174 336.889045" version="1.1">
 <g id="surface21">
 <rect x="0" y="0" width="725.607174" height="336.889045" style="fill:rgb(98.039216%25,92.156863%25,84.313725%25);fill-opacity:1;stroke:none;"/>
@@ -252,7 +252,7 @@ displacements[j5]</code></pre><pre class="documenter-example-output"><code class
 </svg>
 '/><p>Members are now displayed in green to show us the displaced structure, and sure enough, none of the points really moved. Lets try adding a few thousand more pounds to <strong>J5</strong> and seeing what happens.</p><pre><code class="language-julia hljs">set_force!(my_setup, j5, 0, -22241.11) # about 5000 pounds force.
 displacements = solve_displacements(my_setup)
-displacements[j5]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SimpleStatics.Vector2D{Float64}(0.0015857126503871337, -0.010035066948763124)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
+displacements[j5]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">SimpleStatics.Vector2D{Float64}(0.0015857126503871343, -0.010035066948763126)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="725.607174pt" height="336.889045pt" viewBox="0 0 725.607174 336.889045" version="1.1">
 <g id="surface26">
 <rect x="0" y="0" width="725.607174" height="336.889045" style="fill:rgb(98.039216%25,92.156863%25,84.313725%25);fill-opacity:1;stroke:none;"/>
@@ -328,22 +328,22 @@ displacements[j5]</code></pre><pre class="documenter-example-output"><code class
 </g>
 </svg>
 '/><p>Hmm... we&#39;re applying <span>$5k lbf$</span> and only seeing about <span>$0.4&quot;$</span> of sag? That doesn&#39;t sound right. Surely 2x4 lumber isn&#39;t that strong? There&#39;s good news and bad news here. </p><ul><li>Good news: The 2x4 lumber you built your truss with is <em>absolutely</em> that strong.</li><li>Bad news: The screws you used to hold them together were <em>not</em>. </li></ul><h1 id=".-Calculate-Member-Forces"><a class="docs-heading-anchor" href="#.-Calculate-Member-Forces">5. Calculate Member Forces</a><a id=".-Calculate-Member-Forces-1"></a><a class="docs-heading-anchor-permalink" href="#.-Calculate-Member-Forces" title="Permalink"></a></h1><p>Okay, so how do we solve this?  Let&#39;s say a standard deck screw can hold <span>$100lbf$</span> (<span>$444.822N$</span>)  comfortably before it shears, and we use two screws per board, getting about <span>$850N$</span> (conservatively) of force that each board (member) can handle before it breaks. </p><p>We can calculate the force each board is under with the <code>solve_member_forces(setup, displacements)</code> function. </p><div class="admonition is-success"><header class="admonition-header">Remember, plot_setup is your friend!</header><div class="admonition-body"><p>We can also pass the result of <code>solve_member_forces</code> into our <code>plot_setup</code> function using the <code>member_forces</code> keyword! Though these will only be visible if <code>displacements</code> are also present. </p></div></div><pre><code class="language-julia hljs">member_forces = solve_member_forces(my_setup, displacements)
-maximum(member_forces), minimum(member_forces) # in Newtons</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(22241.110000000022, -22241.110000000015)</code></pre><p>First and foremost we notice that, as expected, our truss will be destroyed ten times over given the maximum force on the members. </p><div class="admonition is-info"><header class="admonition-header">Sign conventions are important!</header><div class="admonition-body"><p>Conventionally, negative forces indicate <strong>tension</strong> and positive forces indicate <strong>compression</strong>. This signage is arbitrary, but it&#39;s what was chosen for this library.</p></div></div><p>Lets switch back to our <span>$50lbf$</span> setup and check the maximum member force to see if we can at least bear that load without the risk of failure.</p><pre><code class="language-julia hljs">set_force!(my_setup, j5, 0, -222.411) # about 50 pounds force.
+maximum(member_forces), minimum(member_forces) # in Newtons</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(22241.110000000033, -22241.110000000015)</code></pre><p>First and foremost we notice that, as expected, our truss will be destroyed ten times over given the maximum force on the members. </p><div class="admonition is-info"><header class="admonition-header">Sign conventions are important!</header><div class="admonition-body"><p>Conventionally, negative forces indicate <strong>tension</strong> and positive forces indicate <strong>compression</strong>. This signage is arbitrary, but it&#39;s what was chosen for this library.</p></div></div><p>Lets switch back to our <span>$50lbf$</span> setup and check the maximum member force to see if we can at least bear that load without the risk of failure.</p><pre><code class="language-julia hljs">set_force!(my_setup, j5, 0, -222.411) # about 50 pounds force.
 displacements = solve_displacements(my_setup)
 member_forces = solve_member_forces(my_setup, displacements)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">13-element Vector{Float64}:
  -111.20550000000006
-  157.26832631048157
+  157.2683263104815
     0.0
  -111.20550000000004
- -157.2683263104815
-  222.4110000000004
-  111.20550000000009
+ -157.2683263104814
+  222.41100000000023
+  111.20550000000016
  -222.4110000000002
-  157.26832631048137
-  111.20550000000021
+  157.26832631048126
+  111.20550000000024
    -0.0
  -111.20550000000021
-  157.26832631048157</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
+  157.2683263104815</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="725.607174pt" height="336.889045pt" viewBox="0 0 725.607174 336.889045" version="1.1">
 <g id="surface31">
 <rect x="0" y="0" width="725.607174" height="336.889045" style="fill:rgb(98.039216%25,92.156863%25,84.313725%25);fill-opacity:1;stroke:none;"/>
@@ -424,18 +424,18 @@ member_forces = solve_member_forces(my_setup, displacements)</code></pre><pre cl
     set_force!(my_setup, j5, 0, -222.411)
     displacements = solve_displacements(my_setup)
     member_forces = solve_member_forces(my_setup, displacements)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">13-element Vector{Float64}:
- -111.20550000000007
-  157.26832631048157
+ -111.20550000000003
+  157.2683263104816
     0.0
- -111.20550000000009
- -157.2683263104813
-  222.41100000000034
-  222.41100000000006
+ -111.20550000000003
+ -157.26832631048143
+  222.4110000000003
+  222.41099999999983
  -111.2055000000001
- -157.2683263104813
-  222.41100000000023
+ -157.26832631048126
+  222.41100000000026
    -0.0
- -111.20550000000014
+ -111.20550000000026
   157.2683263104815</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="725.607174pt" height="336.889045pt" viewBox="0 0 725.607174 336.889045" version="1.1">
 <g id="surface36">
@@ -515,7 +515,7 @@ member_forces = solve_member_forces(my_setup, displacements)</code></pre><pre cl
     add_member!(my_setup, j5, j6, m)
     displacements = solve_displacements(my_setup)
     member_forces = solve_member_forces(my_setup, displacements)
-    maximum(member_forces), minimum(member_forces)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(161.59069248271976, -172.0258075172804)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
+    maximum(member_forces), minimum(member_forces)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(161.5906924827198, -172.02580751728047)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="725.607174pt" height="336.889045pt" viewBox="0 0 725.607174 336.889045" version="1.1">
 <g id="surface41">
 <rect x="0" y="0" width="725.607174" height="336.889045" style="fill:rgb(98.039216%25,92.156863%25,84.313725%25);fill-opacity:1;stroke:none;"/>
@@ -684,4 +684,4 @@ member_forces = solve_member_forces(my_setup, displacements)</code></pre><pre cl
 <path style="fill-rule:nonzero;fill:rgb(78.039216%25,8.235294%25,52.156863%25);fill-opacity:1;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(98.039216%25,92.156863%25,84.313725%25);stroke-opacity:1;stroke-miterlimit:10;" d="M 346.117188 128.523438 L 346.117188 129.867188 L 340.679688 129.867188 L 340.679688 133.773438 L 345.320312 133.773438 L 345.320312 135.117188 L 340.679688 135.117188 L 340.679688 140.007812 L 339.023438 140.007812 L 339.023438 128.523438 Z M 348.605469 138.851562 L 351.058594 138.851562 L 351.058594 131.226562 C 351.058594 130.988281 351.0625 130.742188 351.074219 130.492188 L 349.105469 132.179688 C 349.03125 132.242188 348.957031 132.285156 348.886719 132.304688 C 348.8125 132.316406 348.738281 132.316406 348.667969 132.304688 C 348.605469 132.285156 348.546875 132.257812 348.496094 132.226562 C 348.441406 132.195312 348.40625 132.164062 348.386719 132.132812 L 347.902344 131.460938 L 351.339844 128.507812 L 352.574219 128.507812 L 352.574219 138.851562 L 354.808594 138.851562 L 354.808594 140.007812 L 348.605469 140.007812 Z M 355.914062 140.007812 "/>
 </g>
 </svg>
-'/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../examples/example1/">Example 1 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Saturday 12 August 2023 01:04">Saturday 12 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+'/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../examples/example1/">Example 1 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Sunday 13 August 2023 18:48">Sunday 13 August 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
