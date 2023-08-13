@@ -10,7 +10,7 @@ function build_truss(width_m, height_m, n, top_load = 0;
 
     s = StaticSetup()
     
-    m = width_m / (2*n)
+    segment_len = width_m / (2*n)
     
     top_joint_indices = []
     for m in range(0, width_m, 2n + 1)
@@ -19,7 +19,7 @@ function build_truss(width_m, height_m, n, top_load = 0;
     end
     
     bottom_joint_indices = []
-    for m in range(m, width_m - m, n)
+    for m in range(segment_len, width_m - segment_len, n)
         j = add_joint!(s, m, 0)
         push!(bottom_joint_indices, j)
     end
@@ -60,7 +60,7 @@ height = 18 * 0.0254 # 18" tall -> Meters
 s1 = build_truss(width, height, 4)
 load = 500 * 0.453592 * 9.81 # N
 
-nvals = 1:100
+nvals = 1:10
 trusses = [build_truss(width, height, nval, load) for nval in nvals]
 displacements = solve_displacements.(trusses)
 forces = solve_member_forces.(trusses, displacements)
