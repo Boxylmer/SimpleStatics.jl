@@ -55,25 +55,33 @@ function build_truss(width_m, height_m, n, top_load = 0;
 end
 
 
-width = (23 * 12 + 10) * 0.0254 # 23', 10" long -> Meters
+width = (20 * 12) * 0.0254 # 20', 10" long -> Meters
 height = 18 * 0.0254 # 18" tall -> Meters
-s1 = build_truss(width, height, 4)
-load = 500 * 0.453592 * 9.81 # N
+s1 = build_truss(width, height, 5)
+load = 17025 * 0.453592 * 9.81 # N
 
 nvals = 1:10
-trusses = [build_truss(width, height, nval, load) for nval in nvals]
+trusses = [build_truss(width, height, nval, load, thick_material = Materials.SquareTubing(Materials.MildSteel, 1.0 * 0.0381, 1.518 / 1000)) for nval in nvals]
 displacements = solve_displacements.(trusses)
 forces = solve_member_forces.(trusses, displacements)
 reactions = solve_reaction_forces.(trusses, displacements)
 member_stresses = solve_member_stresses.(trusses, forces)
 
-maximum(member_stresses[4])
+maximum(member_stresses[5])
 
 max_stresses = maximum.(solve_stress_utilization.(trusses, member_stresses))
 plot(nvals, max_stresses)
-plot_setup(trusses[4]; dsize=3200, padding=0.4, displacements=displacements[4], member_forces=forces[4], reactions=reactions[4])
-plot_setup(trusses[5]; dsize=3200, padding=0.4, displacements=displacements[5], member_forces=forces[5], reactions=reactions[5])
-plot_setup(trusses[10]; dsize=3200, padding=0.4, displacements=displacements[10], member_forces=forces[10], reactions=reactions[10])
+plot_setup(trusses[5]; dsize=3200, padding=0.4, displacements=displacements[5], member_forces=member_stresses[5], reactions=reactions[5])
+displacements[5][6].y * 1000 / 25.4 # 39.3701
+member_stresses[5][15] / 1000000
+member_stresses[5][29] / 1000000
+member_stresses[5][1] / 1000000
+member_stresses[5][2] / 1000000
+member_stresses[5][3] / 1000000
+
+max_stresses[5]
+
+
 
 @show displacements[10][10].y * 39.3701
 @show displacements[6][6].y * 39.3701
@@ -84,7 +92,7 @@ for (i, stress) in enumerate(rs1)
     println("Stress at member $i: $mpa mpa")
 end
 
-println(mass(s1) * 2.20462, " lb")
+println(mass(trusses[5]) * 2.20462, " lb")
 
 print(maximum(solve_stress_utilization(s1, rs1)))
 
