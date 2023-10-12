@@ -20,7 +20,7 @@ makedocs(;
         "Examples" => [
             "Example 1" => "examples/example1.md"
         ],
-        "Index" => "reference.md",
+        "Reference" => "reference.md",
     ],
 )
 

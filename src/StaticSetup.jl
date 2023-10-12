@@ -7,6 +7,14 @@ struct StaticSetup{T}
     edge_to_vertices::Vector{<:UnorderedPair}  
 end 
 
+"""
+    StaticSetup(T::Type=Float64)
+
+Create a blank StaticSetup where data is stored in type T. 
+Measurement types are supported and tested for. 
+Unitful types should be supported, but tests haven't been written for them yet. (todo)
+
+"""
 function StaticSetup(T::Type=Float64)
     positions = Vector{Vector2D{T}}() # vertex id -> position of that joint
     forces = Vector{Vector2D{T}}() # vertex id -> force vector acting on that joint
