@@ -10,7 +10,7 @@ makedocs(;
     sitename="SimpleStatics.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://github.com/Boxylmer/SimpleStatics.jl",
+        canonical="https://Boxylmer.github.io/SimpleStatics.jl",
         edit_link="main",
         assets=String[],
     ),
