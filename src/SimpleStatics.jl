@@ -1,6 +1,5 @@
 module SimpleStatics
 using LinearAlgebra
-
 using Luxor
 
 

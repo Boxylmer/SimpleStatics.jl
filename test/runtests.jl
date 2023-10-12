@@ -1,7 +1,7 @@
 using SimpleStatics
 using Test
 
-using Measurements # todo add this to deps for docs
+using Measurements
 
 
 @testset "SimpleStatics.jl" begin
