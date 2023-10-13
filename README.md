@@ -22,7 +22,7 @@ Finally, for those of you wanting to use this to check your *statics* homework, 
 
 
 # Motivation
-I'm using this package to build trusses for chicken and duck cages. Once, they're build, I'll be posting pictures here!
+I'm using this package to build trusses for chicken and duck cages. Once, they're built, I'll be posting pictures here!
 
 
 # Quick Start
