@@ -1,6 +1,5 @@
 using SimpleStatics
 using Test
-
 using Measurements
 
 
@@ -184,6 +183,24 @@ using Measurements
         @test f[1] ≈ f[4]
         stresses = solve_member_stresses(s3, f)
         @test stresses[3] ≈ 0
+
+        # Edge case 3: When two joints have the same X component, Y components should be used instead to determine signage. 
+        s4 = StaticSetup(Float64)
+        j1 = add_joint!(s4, 0.0, 0.0)
+        j2 = add_joint!(s4, 0.0, 1.0)
+        j3 = add_joint!(s4, 2, 0)
+
+        m1 = add_member!(s4, j1, j2)
+        m2 = add_member!(s4, j2, j3)
+        m3 = add_member!(s4, j3, j1)
+        
+        set_constraint!(s4, j1, AnchorConstraint())
+        set_constraint!(s4, j3, XRollerConstraint())
+
+        d = solve_displacements(s4)
+        f = solve_member_forces(s4, d)
+        @test all(f.==0)
+
     end
 
     @testset "Visual.jl" begin
